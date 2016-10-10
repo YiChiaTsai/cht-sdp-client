@@ -1,0 +1,22 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item
+        android:id="@+id/menu_settings_ask_time"
+        android:orderInCategory="50"
+        android:showAsAction="always|withText"
+        android:title="@string/action_settings_ask_time"/>
+
+    <item
+        android:id="@+id/menu_settings_ask_certainappuid"
+        android:orderInCategory="51"
+        android:showAsAction="always|withText"
+        android:title="@string/action_settings_ask_certainappuid"/>
+
+    <item
+        android:id="@+id/menu_settings_ask_certainappdata"
+        android:orderInCategory="100"
+        android:showAsAction="always|withText"
+        android:title="@string/action_settings_ask_certainappdata"/>
+
+</menu>
+    <!--android:icon="@android:drawable/ic_menu_info_details"-->
