@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
 import android.app.AlertDialog;
+import android.app.Application;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
@@ -19,6 +20,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 import android.support.v7.app.AppCompatActivity;
@@ -29,6 +31,13 @@ import android.net.TrafficStats;
 import android.os.Bundle;
 import android.os.Handler;
 import android.widget.TextView;
+import android.util.Log;
+
+import com.loopj.android.http.*;
+import android.app.Application;
+import android.app.Application.ActivityLifecycleCallbacks;
+
+import cz.msebera.android.httpclient.Header;
 
 public class AllAppsActivity extends ListActivity {
 	private PackageManager packageManager = null;
@@ -41,6 +50,10 @@ public class AllAppsActivity extends ListActivity {
     private long mStartCertainAppRX = 0;
     private long mStartCertainAppTX = 0;
     private String dataUsage = null;
+
+    private Intent intent;
+    private Button testButton;
+
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -63,6 +76,14 @@ public class AllAppsActivity extends ListActivity {
         } else {
             mHandler.postDelayed(mRunnable, 1000);
         }
+
+
+        testButton = (Button) findViewById(R.id.testme);
+        testButton.setOnClickListener(startClickListener);
+
+        intent = new Intent(AllAppsActivity.this,DialogService.class);
+
+
 	}
 
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -98,7 +119,7 @@ public class AllAppsActivity extends ListActivity {
 		return result;
 	}
 
-	private String getCurrentTime() {
+	public static String getCurrentTime() {
 		Calendar c = Calendar.getInstance();
 		System.out.println("Current time => "+c.getTime());
 
@@ -125,7 +146,7 @@ public class AllAppsActivity extends ListActivity {
 		            dialog.cancel();
 		       }
 		});
-		 
+
 		builder.show();
 	}
 
@@ -234,5 +255,15 @@ public class AllAppsActivity extends ListActivity {
             mHandler.postDelayed(mRunnable, 1000);
         }
     };
+
+    private Button.OnClickListener startClickListener = new Button.OnClickListener() {
+        public void onClick(View arg0) {
+            startService(intent);
+        }
+    };
+
+	public void onDestroy(){
+        stopService(intent);
+	}
 
 }
