@@ -20,6 +20,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -39,7 +40,23 @@ import android.app.Application.ActivityLifecycleCallbacks;
 
 import cz.msebera.android.httpclient.Header;
 
+import java.io.*;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.telephony.TelephonyManager;
+import android.view.Menu;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+
 public class AllAppsActivity extends ListActivity {
+	private String HOST = "192.168.180.128";
+
 	private PackageManager packageManager = null;
 	private List<ApplicationInfo> applist = null;
 	private ApplicationAdapter listadaptor = null;
@@ -54,6 +71,7 @@ public class AllAppsActivity extends ListActivity {
     private Intent intent;
     private Button testButton;
 
+	String trafficdatainfo = "";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -81,7 +99,7 @@ public class AllAppsActivity extends ListActivity {
         testButton = (Button) findViewById(R.id.testme);
         testButton.setOnClickListener(startClickListener);
 
-        intent = new Intent(AllAppsActivity.this,DialogService.class);
+//        intent = new Intent(AllAppsActivity.this,DialogService.class);
 
 
 	}
@@ -106,7 +124,8 @@ public class AllAppsActivity extends ListActivity {
             break;
         }
         case R.id.menu_settings_ask_certainappdata: {
-            displayDataDialog();
+			readFromFile();
+			displayDataDialog();
             break;
         }
 		default: {
@@ -127,6 +146,23 @@ public class AllAppsActivity extends ListActivity {
 		String formattedDate = df.format(c.getTime());
 
         return formattedDate;
+	}
+
+	public static String getOclock() {
+		Calendar c = Calendar.getInstance();
+
+		SimpleDateFormat df = new SimpleDateFormat("mm:ss");
+		String formattedDate = df.format(c.getTime());
+
+		return formattedDate;
+	}
+	public static String getOmin() {
+		Calendar c = Calendar.getInstance();
+
+		SimpleDateFormat df = new SimpleDateFormat("ss");
+		String formattedDate = df.format(c.getTime());
+
+		return formattedDate;
 	}
 
 	private void displayTimeDialog() {
@@ -176,7 +212,8 @@ public class AllAppsActivity extends ListActivity {
 					.getLaunchIntentForPackage(app.packageName);
 
 			if (null != intent) {
-				startActivity(intent);
+//				startActivity(intent);
+				showDialog();
 			}
 		} catch (ActivityNotFoundException e) {
 			Toast.makeText(AllAppsActivity.this, e.getMessage(),
@@ -241,7 +278,7 @@ public class AllAppsActivity extends ListActivity {
 
     private final Runnable mRunnable = new Runnable() {
         public void run() {
-            long rxBytes = (TrafficStats.getTotalRxBytes()- mStartTotalRX)/1048576;
+            long rxBytes = (TrafficStats.getTotalRxBytes()- mStartTotalRX)/1048576; //1024*1024 = 2^20
             long txBytes = (TrafficStats.getTotalTxBytes()- mStartTotalTX)/1048576;
 
             long CertainApprxBytes = (TrafficStats.getUidRxBytes(10066)- mStartCertainAppRX)/1048576;
@@ -249,21 +286,123 @@ public class AllAppsActivity extends ListActivity {
 
             System.out.println("Total: " + rxBytes + "MB" + " " + txBytes + "MB");
             System.out.println("CertainApp: " + CertainApprxBytes + "MB" + " " + CertainApptxBytes + "MB");
+			System.out.println( getOclock() );
 
             dataUsage = "Total: " + rxBytes + "MB" + " " + txBytes + "MB" + "\n" + "CertainApp: " + CertainApprxBytes + "MB" + " " + CertainApptxBytes + "MB";
+
+			if(getOmin().toString().equals("00"))
+				writeToFile(dataUsage);
+
+			if(getOclock().toString().equals("00:00"))
+				trafficdatainfo = readFromFile();
 
             mHandler.postDelayed(mRunnable, 1000);
         }
     };
 
-    private Button.OnClickListener startClickListener = new Button.OnClickListener() {
-        public void onClick(View arg0) {
-            startService(intent);
-        }
-    };
+	private Button.OnClickListener startClickListener = new Button.OnClickListener() {
+		public void onClick(View arg0) {
+//			startService(intent);
+			showDialog();
+		}
+	};
 
 	public void onDestroy(){
         stopService(intent);
+	}
+
+	private void writeToFile(String data) {
+
+
+		try {
+			OutputStreamWriter outputStreamWriter = new OutputStreamWriter(openFileOutput("trafficdata.txt", Context.MODE_PRIVATE));
+			outputStreamWriter.write(data);
+			outputStreamWriter.close();
+		}
+		catch (IOException e) {
+			Log.e("Exception", "File write failed: " + e.toString());
+		}
+	}
+
+	private String readFromFile() {
+
+		String ret = "";
+
+		try {
+			InputStream inputStream = openFileInput("trafficdata.txt");
+
+			if ( inputStream != null ) {
+				InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+				BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+				String receiveString = "";
+				StringBuilder stringBuilder = new StringBuilder();
+
+				while ( (receiveString = bufferedReader.readLine()) != null ) {
+					stringBuilder.append(receiveString);
+				}
+
+				inputStream.close();
+				ret = stringBuilder.toString();
+
+				System.out.println("PPAP: " + ret);
+			}
+		}
+		catch (FileNotFoundException e) {
+			Log.e("login activity", "File not found: " + e.toString());
+		} catch (IOException e) {
+			Log.e("login activity", "Can not read file: " + e.toString());
+		}
+
+		return ret;
+	}
+
+	//For dialog
+	private void showDialog(){
+		AlertDialog.Builder builder = new AlertDialog.Builder(AllAppsActivity.this);
+		builder.setTitle("有更優惠的時段唷");
+		builder.setMessage("是否確定要在此時使用軟體?");
+		builder.setPositiveButton("我就是要使用",new DialogInterface.OnClickListener(){
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				RequestParams params = new RequestParams();
+				params.put("DATA", "Yes,"+AllAppsActivity.getCurrentTime());
+				passToServer(params);
+			}
+		});
+		builder.setNegativeButton("算了，我下次再用", new DialogInterface.OnClickListener(){
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				RequestParams params = new RequestParams();
+				params.put("DATA", "No,"+AllAppsActivity.getCurrentTime());
+				passToServer(params);
+			}
+		});
+		AlertDialog alert = builder.create();
+		alert.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);//設定提示框為系統提示框
+		alert.show();
+	}
+
+	//傳至Server
+	public void passToServer(RequestParams params){
+		AsyncHttpClient client = new AsyncHttpClient();
+		client.get("http://" + HOST + ":8080/MobileRestServer/rest/hello/CHT-SDP", params, new AsyncHttpResponseHandler() {
+			@Override
+			public void onSuccess(int i, Header[] headers, byte[] bytes) {
+				CharSequence cs = new String(bytes);
+				Toast toast = Toast.makeText(getApplicationContext(), cs, Toast.LENGTH_SHORT);    //toast 會閃現    用textView來接
+				toast.show();
+			}
+
+			@Override
+			public void onFailure(int i, Header[] headers, byte[] bytes, Throwable throwable) {
+				Log.e("InvokeWS", Integer.toString(i));
+				if (bytes != null) {
+					CharSequence cs = new String(bytes);
+					Toast toast = Toast.makeText(getApplicationContext(), cs, Toast.LENGTH_SHORT);
+					toast.show();
+				}
+			}
+		});
 	}
 
 }
