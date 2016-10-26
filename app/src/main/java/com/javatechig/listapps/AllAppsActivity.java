@@ -293,11 +293,12 @@ public class AllAppsActivity extends ListActivity {
 
 			if(getOmin().toString().equals("00")) {
 				writeToFile(CertainApprxBytes + "MB" + "," + CertainApptxBytes + "MB");
+				trafficDataInfo = readFromFile();
+				infoSentToServer = "DATAUSAGE" + "," + "10066" + "," + "YouTube" + "," + getCurrentTime() + "," + trafficDataInfo;
 			}
 
 			if(getOclock().toString().equals("00:00")) {
-				trafficDataInfo = readFromFile();
-				infoSentToServer = "DATAUSAGE" + "," + "10066" + "," + "YouTube" + "," + getCurrentTime() + "," + trafficDataInfo;
+				showDialog();
 			}
 
             mHandler.postDelayed(mRunnable, 1000);
