@@ -71,7 +71,8 @@ public class AllAppsActivity extends ListActivity {
     private Intent intent;
     private Button testButton;
 
-	String trafficdatainfo = "";
+	String trafficDataInfo = "";
+	String infoSentToServer = "";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -290,11 +291,14 @@ public class AllAppsActivity extends ListActivity {
 
             dataUsage = "Total: " + rxBytes + "MB" + " " + txBytes + "MB" + "\n" + "CertainApp: " + CertainApprxBytes + "MB" + " " + CertainApptxBytes + "MB";
 
-			if(getOmin().toString().equals("00"))
-				writeToFile(dataUsage);
+			if(getOmin().toString().equals("00")) {
+				writeToFile(CertainApprxBytes + "MB" + "," + CertainApptxBytes + "MB");
+			}
 
-			if(getOclock().toString().equals("00:00"))
-				trafficdatainfo = readFromFile();
+			if(getOclock().toString().equals("00:00")) {
+				trafficDataInfo = readFromFile();
+				infoSentToServer = "DATAUSAGE" + "," + "10066" + "," + "YouTube" + "," + getCurrentTime() + "," + trafficDataInfo;
+			}
 
             mHandler.postDelayed(mRunnable, 1000);
         }
@@ -365,7 +369,7 @@ public class AllAppsActivity extends ListActivity {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				RequestParams params = new RequestParams();
-				params.put("DATA", "Yes,"+AllAppsActivity.getCurrentTime());
+				params.put("DATA", "Yes,"+infoSentToServer); //"Yes,"+ getCurrentTime() ->
 				passToServer(params);
 			}
 		});
@@ -373,7 +377,7 @@ public class AllAppsActivity extends ListActivity {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				RequestParams params = new RequestParams();
-				params.put("DATA", "No,"+AllAppsActivity.getCurrentTime());
+				params.put("DATA", "No,"+infoSentToServer);
 				passToServer(params);
 			}
 		});
