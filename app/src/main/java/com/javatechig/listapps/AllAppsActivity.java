@@ -296,9 +296,10 @@ public class AllAppsActivity extends ListActivity {
 				trafficDataInfo = readFromFile();
 
 				infoSentToServer = "10066" + "," + "YouTube" + "," + getCurrentTime() + "," + trafficDataInfo;
+				infoSentToServer = "10066" + "," + "YouTube" + "," + getCurrentTime();
 				RequestParams params = new RequestParams();
 				params.put("DATAUSAGE", infoSentToServer);
-				passToServer(params);
+				passToServer(params,"CHT-DATAUSAGE");
 
 			}
 
@@ -376,7 +377,7 @@ public class AllAppsActivity extends ListActivity {
 			public void onClick(DialogInterface dialog, int which) {
 				RequestParams params = new RequestParams();
 				params.put("RULE", "Yes,"+getCurrentTime()); //"Yes,"+ getCurrentTime() ->
-				passToServer(params);
+				passToServer(params,"CHT-RULE");
 			}
 		});
 		builder.setNegativeButton("算了，我下次再用", new DialogInterface.OnClickListener(){
@@ -384,7 +385,7 @@ public class AllAppsActivity extends ListActivity {
 			public void onClick(DialogInterface dialog, int which) {
 				RequestParams params = new RequestParams();
 				params.put("RULE", "No,"+getCurrentTime());
-				passToServer(params);
+				passToServer(params,"CHT-RULE");
 			}
 		});
 		AlertDialog alert = builder.create();
@@ -393,9 +394,9 @@ public class AllAppsActivity extends ListActivity {
 	}
 
 	//傳至Server
-	public void passToServer(RequestParams params){
+	public void passToServer(RequestParams params, String towhere){
 		AsyncHttpClient client = new AsyncHttpClient();
-		client.get("http://" + HOST + ":8080/CHTServer/hello/CHT-SDP", params, new AsyncHttpResponseHandler() {
+		client.get("http://" + HOST + ":8080/CHTServer/hello/"+towhere+"", params, new AsyncHttpResponseHandler() {
 			@Override
 			public void onSuccess(int i, Header[] headers, byte[] bytes) {
 				CharSequence cs = new String(bytes);
