@@ -375,7 +375,7 @@ public class AllAppsActivity extends ListActivity {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				RequestParams params = new RequestParams();
-				params.put("DATA", "Yes,"+getCurrentTime()); //"Yes,"+ getCurrentTime() ->
+				params.put("RULE", "Yes,"+getCurrentTime()); //"Yes,"+ getCurrentTime() ->
 				passToServer(params);
 			}
 		});
@@ -383,7 +383,7 @@ public class AllAppsActivity extends ListActivity {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				RequestParams params = new RequestParams();
-				params.put("DATA", "No,"+getCurrentTime());
+				params.put("RULE", "No,"+getCurrentTime());
 				passToServer(params);
 			}
 		});
