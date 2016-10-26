@@ -55,7 +55,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 public class AllAppsActivity extends ListActivity {
-	private String HOST = "192.168.180.128";
+	private String HOST = "192.168.43.176";
 
 	private PackageManager packageManager = null;
 	private List<ApplicationInfo> applist = null;
@@ -294,7 +294,12 @@ public class AllAppsActivity extends ListActivity {
 			if(getOmin().toString().equals("00")) {
 				writeToFile(CertainApprxBytes + "MB" + "," + CertainApptxBytes + "MB");
 				trafficDataInfo = readFromFile();
-				infoSentToServer = "DATAUSAGE" + "," + "10066" + "," + "YouTube" + "," + getCurrentTime() + "," + trafficDataInfo;
+
+				infoSentToServer = "10066" + "," + "YouTube" + "," + getCurrentTime() + "," + trafficDataInfo;
+				RequestParams params = new RequestParams();
+				params.put("DATAUSAGE", infoSentToServer);
+				passToServer(params);
+
 			}
 
 			if(getOclock().toString().equals("00:00")) {
@@ -370,7 +375,7 @@ public class AllAppsActivity extends ListActivity {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				RequestParams params = new RequestParams();
-				params.put("DATA", "Yes,"+infoSentToServer); //"Yes,"+ getCurrentTime() ->
+				params.put("DATA", "Yes,"+getCurrentTime()); //"Yes,"+ getCurrentTime() ->
 				passToServer(params);
 			}
 		});
@@ -378,7 +383,7 @@ public class AllAppsActivity extends ListActivity {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				RequestParams params = new RequestParams();
-				params.put("DATA", "No,"+infoSentToServer);
+				params.put("DATA", "No,"+getCurrentTime());
 				passToServer(params);
 			}
 		});
@@ -390,7 +395,7 @@ public class AllAppsActivity extends ListActivity {
 	//傳至Server
 	public void passToServer(RequestParams params){
 		AsyncHttpClient client = new AsyncHttpClient();
-		client.get("http://" + HOST + ":8080/MobileRestServer/rest/hello/CHT-SDP", params, new AsyncHttpResponseHandler() {
+		client.get("http://" + HOST + ":8080/CHTServer/hello/CHT-SDP", params, new AsyncHttpResponseHandler() {
 			@Override
 			public void onSuccess(int i, Header[] headers, byte[] bytes) {
 				CharSequence cs = new String(bytes);
