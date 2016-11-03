@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-<string name="app_name">List All Apps</string>
+<string name="app_name">CHT SDP</string>
 <string name="action_settings_ask_time">Time</string>
 <string name="action_settings_ask_certainappuid">Uid</string>
 <string name="action_settings_ask_certainappdata">Data Usage</string>

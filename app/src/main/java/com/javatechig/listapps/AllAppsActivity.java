@@ -16,6 +16,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.health.UidHealthStats;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -54,6 +55,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import org.json.*;
+
+
 public class AllAppsActivity extends ListActivity {
 	private String HOST = "192.168.43.176";
 
@@ -68,11 +72,25 @@ public class AllAppsActivity extends ListActivity {
     private long mStartCertainAppTX = 0;
     private String dataUsage = null;
 
+    private JSONObject jsonObj = new JSONObject();
+    private int jsonObjId = 0;
+
+	private int useOrNot = 0; //default is 0, true is 1, false is 2.
+
     private Intent intent;
     private Button testButton;
 
 	String trafficDataInfo = "";
 	String infoSentToServer = "";
+
+	private int[] arrayUid = new int[]{10136, 10137, 10066, 10139, 10140, 10141};
+	private String[] arrayApp = new String[]{"Facebook","LINE","YouTube", "VoiceTube", "ClashofClans", "Knowledge"};
+	private double[][] dataUsageOfApp = new double[365][12];
+	private double[][] dataUsageOfMorning = new double[365][12]; //0-rx0, 1-tx0, 2-rx1, 3-tx1, ...
+	private double[][] dataUsageOfAfternoon = new double[365][12];
+	private double[][] dataUsageOfEvening = new double[365][12];
+	private double[][] dataUsageOfMidnight = new double[365][12];
+	private double[][] thresholdOfTime = new double[365][4]; //Exceed 150MB, set it 1. Otherwise, set it 0.
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -85,8 +103,24 @@ public class AllAppsActivity extends ListActivity {
 
         mStartTotalRX = TrafficStats.getTotalRxBytes();
         mStartTotalRX = TrafficStats.getTotalTxBytes();
-        mStartCertainAppRX = TrafficStats.getUidRxBytes(10066); //youtube
-        mStartCertainAppTX = TrafficStats.getUidTxBytes(10066); //youtube
+
+		for(int i=0; i<6; i++){
+			dataUsageOfApp[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
+			dataUsageOfApp[0][i*2] = TrafficStats.getUidTxBytes(arrayUid[i]);
+
+			dataUsageOfMorning[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
+			dataUsageOfMorning[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
+
+			dataUsageOfAfternoon[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
+			dataUsageOfAfternoon[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
+
+			dataUsageOfEvening[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
+			dataUsageOfEvening[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
+
+			dataUsageOfMidnight[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
+			dataUsageOfMidnight[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
+		}
+
         if (mStartTotalRX == TrafficStats.UNSUPPORTED || mStartTotalRX == TrafficStats.UNSUPPORTED || mStartCertainAppRX == TrafficStats.UNSUPPORTED || mStartCertainAppTX == TrafficStats.UNSUPPORTED) {
             AlertDialog.Builder alert = new AlertDialog.Builder(this);
             alert.setTitle("Uh Oh!");
@@ -101,7 +135,6 @@ public class AllAppsActivity extends ListActivity {
         testButton.setOnClickListener(startClickListener);
 
 //        intent = new Intent(AllAppsActivity.this,DialogService.class);
-
 
 	}
 
@@ -149,15 +182,39 @@ public class AllAppsActivity extends ListActivity {
         return formattedDate;
 	}
 
-	public static String getOclock() {
+    public static String getDate() {
+        Calendar c = Calendar.getInstance();
+
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        String formattedDate = df.format(c.getTime());
+
+        return formattedDate;
+    }
+	public static String getClock() {
 		Calendar c = Calendar.getInstance();
 
-		SimpleDateFormat df = new SimpleDateFormat("mm:ss");
+		SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
 		String formattedDate = df.format(c.getTime());
 
 		return formattedDate;
 	}
-	public static String getOmin() {
+	public static String getHr() {
+		Calendar c = Calendar.getInstance();
+
+		SimpleDateFormat df = new SimpleDateFormat("HH");
+		String formattedDate = df.format(c.getTime());
+
+		return formattedDate;
+	}
+	public static String getMin() {
+		Calendar c = Calendar.getInstance();
+
+		SimpleDateFormat df = new SimpleDateFormat("mm");
+		String formattedDate = df.format(c.getTime());
+
+		return formattedDate;
+	}
+	public static String getSec() {
 		Calendar c = Calendar.getInstance();
 
 		SimpleDateFormat df = new SimpleDateFormat("ss");
@@ -188,9 +245,14 @@ public class AllAppsActivity extends ListActivity {
 	}
 
     private void displayUidDialog() {
+		String Uid = "";
+		for(int i=0; i<6; i++){
+			Uid += arrayApp[i] + ": " + arrayUid[i] + "\n";
+		}
+
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(getString(R.string.ask_certainappuid_title));
-        builder.setMessage("10066");
+        builder.setMessage(Uid);
 
         builder.show();
     }
@@ -213,8 +275,10 @@ public class AllAppsActivity extends ListActivity {
 					.getLaunchIntentForPackage(app.packageName);
 
 			if (null != intent) {
-//				startActivity(intent);
 				showDialog();
+				if(useOrNot == 1)
+					startActivity(intent);
+
 			}
 		} catch (ActivityNotFoundException e) {
 			Toast.makeText(AllAppsActivity.this, e.getMessage(),
@@ -279,30 +343,97 @@ public class AllAppsActivity extends ListActivity {
 
     private final Runnable mRunnable = new Runnable() {
         public void run() {
-            long rxBytes = (TrafficStats.getTotalRxBytes()- mStartTotalRX)/1048576; //1024*1024 = 2^20
+
+            long rxBytes = (TrafficStats.getTotalRxBytes()- mStartTotalRX)/1048576; //1048576 = 1024*1024 = 2^20
             long txBytes = (TrafficStats.getTotalTxBytes()- mStartTotalTX)/1048576;
+
+			//Every hour, we call the DATAUSAGE function and send it to Server
+			if(getSec().toString().equals("00")) { //getMin().toString().equals("00") && getSec().toString().equals("00")
+//				rxBytes;
+                try {
+                    // Here we convert Java Object to JSON
+                    jsonObj.put("id", jsonObjId);
+                    jsonObj.put("date", getDate()); // Set the first name/pair
+                    jsonObj.put("clock", getClock());
+                    jsonObj.put("datausageRx", rxBytes);
+                    jsonObj.put("datausageTx", txBytes);
+
+                    jsonObjId++;
+
+//            JSONObject jsonAdd = new JSONObject(); // we need another object to store the address
+//            jsonAdd.put("address", "infinite space, 000");
+//            jsonAdd.put("city", "Android city");
+//            jsonAdd.put("state", "World");	// We add the object to the main object
+//
+//            jsonObj.put("address", jsonAdd);	// and finally we add the phone number
+//            // In this case we need a json array to hold the java list
+//
+//            JSONArray jsonArr = new JSONArray();
+//
+//            for ( int i=0; i<3; i++) {
+//                JSONObject pnObj = new JSONObject();
+//                pnObj.put("num", i);
+//                pnObj.put("type", i+10);
+//                jsonArr.put(pnObj);
+//            }
+//
+//            jsonObj.put("phoneNumber", jsonArr);
+
+                    System.out.println(jsonObj.toString());
+
+                    RequestParams params = new RequestParams();
+                    infoSentToServer = jsonObj.toString();
+                    params.put("DATAUSAGE", infoSentToServer);
+                    passToServer(params);
+
+                }
+                catch(JSONException ex) {
+                    ex.printStackTrace();
+                }
+			}
 
             long CertainApprxBytes = (TrafficStats.getUidRxBytes(10066)- mStartCertainAppRX)/1048576;
             long CertainApptxBytes = (TrafficStats.getUidTxBytes(10066)- mStartCertainAppTX)/1048576;
 
-            System.out.println("Total: " + rxBytes + "MB" + " " + txBytes + "MB");
-            System.out.println("CertainApp: " + CertainApprxBytes + "MB" + " " + CertainApptxBytes + "MB");
-			System.out.println( getOclock() );
+//			for(int i=0; i<6; i++){
+//				int time = Integer.parseInt(getOclock());
+//				if(time>=0 && time < 700){
+//					dataUsageOfMidnight[0][i*2] = TrafficStats.getUidRxBytes(10066) - dataUsageOfMidnight[0][i*2];
+//				}
+//				if(time>=700 && time < 1200){
+//
+//				}
+//
+//				dataUsageOfApp[0][i*2] = dataUsageOfMorning[0][i*2] + dataUsageOfAfternoon[0][i*2] + dataUsageOfEvening[0][i*2] + dataUsageOfMidnight[0][i*2];
+//				dataUsageOfApp[0][i*2+1] = dataUsageOfMorning[0][i*2+1] + dataUsageOfAfternoon[0][i*2+1] + dataUsageOfEvening[0][i*2+1] + dataUsageOfMidnight[0][i*2+1];
+//			}
+
+            System.out.println("Total: " + rxBytes + "Bytes" + " " + txBytes + "Bytes");
+//			for(int i=0; i<6; i++) {
+//				System.out.println(arrayApp[i] + "(" + arrayUid[i] + ")" + ": " + dataUsageOfApp[0][i*2] + "Bytes" + " " + dataUsageOfApp[0][i*2+1] + "Bytes");
+//			}
+
+//			System.out.println( Integer.parseInt(getOclock()) );
+			System.out.println( getCurrentTime() );
 
             dataUsage = "Total: " + rxBytes + "MB" + " " + txBytes + "MB" + "\n" + "CertainApp: " + CertainApprxBytes + "MB" + " " + CertainApptxBytes + "MB";
 
-			if(getOmin().toString().equals("00")) {
+
+			// (TEST) Every minutes, return the APP data usage to server.
+			if(getMin().toString().equals("00")) {
 				writeToFile(CertainApprxBytes + "MB" + "," + CertainApptxBytes + "MB");
 				trafficDataInfo = readFromFile();
 
 				infoSentToServer = "10066" + "," + "YouTube" + "," + getCurrentTime() + "," + trafficDataInfo;
+
 				RequestParams params = new RequestParams();
 				params.put("DATAUSAGE", infoSentToServer);
 				passToServer(params);
 
 			}
 
-			if(getOclock().toString().equals("00:00")) {
+			// Every hour, return the APP data usage to server.
+			if(getClock().toString().equals("00:00")) {
 				showDialog();
 			}
 
@@ -367,7 +498,7 @@ public class AllAppsActivity extends ListActivity {
 	}
 
 	//For dialog
-	private void showDialog(){
+	private int showDialog(){
 		AlertDialog.Builder builder = new AlertDialog.Builder(AllAppsActivity.this);
 		builder.setTitle("有更優惠的時段唷");
 		builder.setMessage("是否確定要在此時使用軟體?");
@@ -377,6 +508,7 @@ public class AllAppsActivity extends ListActivity {
 				RequestParams params = new RequestParams();
 				params.put("RULE", "Yes,"+getCurrentTime()); //"Yes,"+ getCurrentTime() ->
 				passToServer(params);
+				useOrNot = 1;
 			}
 		});
 		builder.setNegativeButton("算了，我下次再用", new DialogInterface.OnClickListener(){
@@ -385,11 +517,14 @@ public class AllAppsActivity extends ListActivity {
 				RequestParams params = new RequestParams();
 				params.put("RULE", "No,"+getCurrentTime());
 				passToServer(params);
+				useOrNot = 2;
 			}
 		});
 		AlertDialog alert = builder.create();
 		alert.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);//設定提示框為系統提示框
 		alert.show();
+
+		return useOrNot;
 	}
 
 	//傳至Server
