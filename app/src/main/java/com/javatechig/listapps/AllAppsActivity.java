@@ -68,13 +68,17 @@ public class AllAppsActivity extends ListActivity {
 	private Handler mHandler = new Handler();
 	private long mStartTotalRX = 0;
 	private long mStartTotalTX = 0;
-	private long mStartCertainAppRX = 0;
-	private long mStartCertainAppTX = 0;
-	private String dataUsage = null;
+//	private long mStartCertainAppRX = 0;
+//	private long mStartCertainAppTX = 0;
+	private String dataUsageSummary = null;
 
 	private JSONObject jsonObj = new JSONObject();
 	private JSONArray jsonArr = new JSONArray();
 	private int jsonArrId = 0;
+
+	private JSONObject jsonObjSummary = new JSONObject();
+	private JSONArray jsonArrSummary = new JSONArray();
+	private int jsonArrIdSummary = 0;
 
 	private int useOrNot = 0; //default is 0, true is 1, false is 2.
 
@@ -84,14 +88,25 @@ public class AllAppsActivity extends ListActivity {
 	String trafficDataInfo = "";
 	String infoSentToServer = "";
 
+	private double dataUsageOfDay = 0;
+	private double dataUsageOfMorning = 0;
+	private double dataUsageOfAfternoon = 0;
+	private double dataUsageOfEvening = 0;
+	private double dataUsageOfMidnight = 0;
+
+	final private double thresholdOfDay = 150;
+	final private double thresholdOfMorning = 150;
+	final private double thresholdOfAfternoon = 150;
+	final private double thresholdOfEvening = 150;
+	final private double thresholdOfMidnight = 150;
 	private int[] arrayUid = new int[]{10136, 10137, 10066, 10139, 10140, 10141};
 	private String[] arrayApp = new String[]{"Facebook","LINE","YouTube", "VoiceTube", "ClashofClans", "Knowledge"};
-	private double[][] dataUsageOfApp = new double[365][12];
-	private double[][] dataUsageOfMorning = new double[365][12]; //0-rx0, 1-tx0, 2-rx1, 3-tx1, ...
-	private double[][] dataUsageOfAfternoon = new double[365][12];
-	private double[][] dataUsageOfEvening = new double[365][12];
-	private double[][] dataUsageOfMidnight = new double[365][12];
-	private double[][] thresholdOfTime = new double[365][4]; //Exceed 150MB, set it 1. Otherwise, set it 0.
+//	private double[][] dataUsageOfApp = new double[365][12];
+//	private double[][] dataUsageOfMorning = new double[365][12]; //0-rx0, 1-tx0, 2-rx1, 3-tx1, ...
+//	private double[][] dataUsageOfAfternoon = new double[365][12];
+//	private double[][] dataUsageOfEvening = new double[365][12];
+//	private double[][] dataUsageOfMidnight = new double[365][12];
+//	private double[][] thresholdOfTime = new double[365][4]; //Exceed 150MB, set it 1. Otherwise, set it 0.
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -105,24 +120,24 @@ public class AllAppsActivity extends ListActivity {
 		mStartTotalRX = TrafficStats.getTotalRxBytes();
 		mStartTotalRX = TrafficStats.getTotalTxBytes();
 
-		for(int i=0; i<6; i++){
-			dataUsageOfApp[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
-			dataUsageOfApp[0][i*2] = TrafficStats.getUidTxBytes(arrayUid[i]);
+//		for(int i=0; i<6; i++){
+//			dataUsageOfApp[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
+//			dataUsageOfApp[0][i*2] = TrafficStats.getUidTxBytes(arrayUid[i]);
+//
+//			dataUsageOfMorning[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
+//			dataUsageOfMorning[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
+//
+//			dataUsageOfAfternoon[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
+//			dataUsageOfAfternoon[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
+//
+//			dataUsageOfEvening[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
+//			dataUsageOfEvening[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
+//
+//			dataUsageOfMidnight[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
+//			dataUsageOfMidnight[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
+//		}
 
-			dataUsageOfMorning[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
-			dataUsageOfMorning[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
-
-			dataUsageOfAfternoon[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
-			dataUsageOfAfternoon[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
-
-			dataUsageOfEvening[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
-			dataUsageOfEvening[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
-
-			dataUsageOfMidnight[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
-			dataUsageOfMidnight[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
-		}
-
-		if (mStartTotalRX == TrafficStats.UNSUPPORTED || mStartTotalRX == TrafficStats.UNSUPPORTED || mStartCertainAppRX == TrafficStats.UNSUPPORTED || mStartCertainAppTX == TrafficStats.UNSUPPORTED) {
+		if (mStartTotalRX == TrafficStats.UNSUPPORTED || mStartTotalRX == TrafficStats.UNSUPPORTED) {
 			AlertDialog.Builder alert = new AlertDialog.Builder(this);
 			alert.setTitle("Uh Oh!");
 			alert.setMessage("Your device does not support traffic stat monitoring.");
@@ -223,6 +238,30 @@ public class AllAppsActivity extends ListActivity {
 
 		return formattedDate;
 	}
+	public static String getYear() {
+		Calendar c = Calendar.getInstance();
+
+		SimpleDateFormat df = new SimpleDateFormat("yyyy");
+		String formattedDate = df.format(c.getTime());
+
+		return formattedDate;
+	}
+	public static String getMonth() {
+		Calendar c = Calendar.getInstance();
+
+		SimpleDateFormat df = new SimpleDateFormat("MM");
+		String formattedDate = df.format(c.getTime());
+
+		return formattedDate;
+	}
+	public static String getDay() {
+		Calendar c = Calendar.getInstance();
+
+		SimpleDateFormat df = new SimpleDateFormat("dd");
+		String formattedDate = df.format(c.getTime());
+
+		return formattedDate;
+	}
 
 	private void displayTimeDialog() {
 		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -259,9 +298,95 @@ public class AllAppsActivity extends ListActivity {
 	}
 
 	private void displayDataDialog() {
+		dataUsageOfDay = 0;
+		dataUsageOfMorning = 0;
+		dataUsageOfAfternoon = 0;
+		dataUsageOfEvening = 0;
+		dataUsageOfMidnight = 0;
+		dataUsageSummary= "";
+
+		try {
+			JSONArray databases = jsonObj.getJSONArray("databases");
+
+			for (int i = 0; i < databases.length(); i++) {
+				JSONObject c = databases.getJSONObject(i);
+
+				String id = c.getString("id");
+				String date = c.getString("date");
+				String clock = c.getString("clock");
+				String hr = c.getString("hr");
+				String datausageRx = c.getString("datausageRx");
+				String datausageTx = c.getString("datausageTx");
+				String datausageSum = c.getString("datausageSum");
+				String datausageRxNow = c.getString("datausageRxNow");
+				String datausageTxNow = c.getString("datausageTxNow");
+				String datausageSumNow = c.getString("datausageSumNow");
+
+				dataUsageSummary += "RichardList: " + id + " " + date + " " + clock + " " + datausageRx + " " + datausageTx + " " + datausageSum + " " + datausageRxNow + " " + datausageTxNow + " " + datausageSumNow + "\n";
+				System.out.print(dataUsageSummary);
+
+				if (hr == "07" || hr == "08" || hr == "09" || hr == "10" || hr == "11") {
+					dataUsageOfMorning += Double.parseDouble(datausageSumNow);
+				}
+				if (hr == "12" || hr == "13" || hr == "14" || hr == "15" || hr == "16") {
+					dataUsageOfAfternoon += Double.parseDouble(datausageSumNow);
+				}
+				if (hr == "17" || hr == "18" || hr == "19" || hr == "20" || hr == "21" || hr == "22" || hr == "23") {
+					dataUsageOfEvening += Double.parseDouble(datausageSumNow);
+				}
+				if (hr == "00" || hr == "01" || hr == "02" || hr == "03" || hr == "04" || hr == "05" || hr == "06") {
+					dataUsageOfMidnight += Double.parseDouble(datausageSumNow);
+				}
+			}
+			dataUsageOfDay = dataUsageOfMorning + dataUsageOfAfternoon + dataUsageOfEvening + dataUsageOfMidnight;
+
+			JSONObject statisticsObj0 = new JSONObject();
+			statisticsObj0.put("date", getDate()); // Set the first name/pair
+			statisticsObj0.put("timeslot", "morning");
+			statisticsObj0.put("datausageSum", dataUsageOfMorning);
+			jsonArrSummary.put(statisticsObj0);
+			jsonObjSummary.put("databasesSummary", jsonArrSummary);
+
+			JSONObject statisticsObj1 = new JSONObject();
+			statisticsObj1.put("date", getDate()); // Set the first name/pair
+			statisticsObj1.put("timeslot", "afternoon");
+			statisticsObj1.put("datausageSum", dataUsageOfAfternoon);
+			jsonArrSummary.put(statisticsObj1);
+			jsonObjSummary.put("databasesSummary", jsonArrSummary);
+
+			JSONObject statisticsObj2 = new JSONObject();
+			statisticsObj2.put("date", getDate()); // Set the first name/pair
+			statisticsObj2.put("timeslot", "evening");
+			statisticsObj2.put("datausageSum", dataUsageOfEvening);
+			jsonArrSummary.put(statisticsObj2);
+			jsonObjSummary.put("databasesSummary", jsonArrSummary);
+
+			JSONObject statisticsObj3 = new JSONObject();
+			statisticsObj3.put("date", getDate()); // Set the first name/pair
+			statisticsObj3.put("timeslot", "midnight");
+			statisticsObj3.put("datausageSum", dataUsageOfMidnight);
+			jsonArrSummary.put(statisticsObj3);
+			jsonObjSummary.put("databasesSummary", jsonArrSummary);
+
+			JSONObject statisticsObj4 = new JSONObject();
+			statisticsObj4.put("date", getDate()); // Set the first name/pair
+			statisticsObj4.put("timeslot", "day");
+			statisticsObj4.put("datausageSum", dataUsageOfDay);
+			jsonArrSummary.put(statisticsObj4);
+			jsonObjSummary.put("databasesSummary", jsonArrSummary);
+
+
+//			System.out.println("RichardJson: " + jsonObjSummary.toString());
+		}catch(JSONException ex) {
+			ex.printStackTrace();
+		}
+
+
 		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setTitle(getString(R.string.ask_certainappdata_title));
-		builder.setMessage(dataUsage);
+		builder.setTitle(getString(R.string.ask_appdata_title));
+
+		dataUsageSummary += "RichardJson: " + jsonObjSummary.toString() + "\n";
+		builder.setMessage(dataUsageSummary);
 
 		builder.show();
 	}
@@ -345,6 +470,8 @@ public class AllAppsActivity extends ListActivity {
 	private final Runnable mRunnable = new Runnable() {
 		public void run() {
 
+			System.out.println( getCurrentTime() );
+
 			long rxBytes = (TrafficStats.getTotalRxBytes()- mStartTotalRX)/1048576; //1048576 = 1024*1024 = 2^20
 			long txBytes = (TrafficStats.getTotalTxBytes()- mStartTotalTX)/1048576;
 			long sumBytes = rxBytes + txBytes;
@@ -358,6 +485,7 @@ public class AllAppsActivity extends ListActivity {
 					pnObj.put("id", jsonArrId);
 					pnObj.put("date", getDate()); // Set the first name/pair
 					pnObj.put("clock", getClock());
+					pnObj.put("hr", getHr());
 					pnObj.put("datausageRx", rxBytes);
 					pnObj.put("datausageTx", txBytes);
 					pnObj.put("datausageSum", sumBytes);
@@ -398,29 +526,24 @@ public class AllAppsActivity extends ListActivity {
 							String datausageTxNow = c.getString("datausageTxNow");
 							String datausageSumNow = c.getString("datausageSumNow"); 
 
-//							System.out.println("Richard: " + id + " " + date + " " + clock + " " + datausageRx + " " + datausageTx + " " + datausageSum);
-							System.out.println("Richard: " + id + " " + date + " " + clock + " " + datausageRx + " " + datausageTx + " " + datausageSum + " " + datausageRxNow + " " + datausageTxNow + " " + datausageSumNow);
+							System.out.println("RichardList: " + id + " " + date + " " + clock + " " + datausageRx + " " + datausageTx + " " + datausageSum + " " + datausageRxNow + " " + datausageTxNow + " " + datausageSumNow);
 						}
+						System.out.println("RichardJson: " + jsonObj.toString());
 					}catch(JSONException ex) {
 						ex.printStackTrace();
 					}
 				}
 
-					System.out.println(jsonObj.toString());
-
 					RequestParams params = new RequestParams();
 					infoSentToServer = jsonObj.toString();
-//					params.put("DATAUSAGE", infoSentToServer);
-//					passToServer(params);
+					params.put("DATAUSAGE", infoSentToServer);
+					passToServer(params);
 
 				}
 				catch(JSONException ex) {
 					ex.printStackTrace();
 				}
 			}
-
-			long CertainApprxBytes = (TrafficStats.getUidRxBytes(10066)- mStartCertainAppRX)/1048576;
-			long CertainApptxBytes = (TrafficStats.getUidTxBytes(10066)- mStartCertainAppTX)/1048576;
 
 //			for(int i=0; i<6; i++){
 //				int time = Integer.parseInt(getOclock());
@@ -441,9 +564,11 @@ public class AllAppsActivity extends ListActivity {
 //			}
 
 //			System.out.println( Integer.parseInt(getOclock()) );
-			System.out.println( getCurrentTime() );
 
-			dataUsage = "Total: " + rxBytes + "MB" + " " + txBytes + "MB" + "\n" + "CertainApp: " + CertainApprxBytes + "MB" + " " + CertainApptxBytes + "MB";
+//			long CertainApprxBytes = (TrafficStats.getUidRxBytes(10066)- mStartCertainAppRX)/1048576;
+//			long CertainApptxBytes = (TrafficStats.getUidTxBytes(10066)- mStartCertainAppTX)/1048576;
+//
+//			dataUsage = "Total: " + rxBytes + "MB" + " " + txBytes + "MB" + "\n" + "CertainApp: " + CertainApprxBytes + "MB" + " " + CertainApptxBytes + "MB";
 
 
 			// (TEST) Every minutes, return the APP data usage to server.
