@@ -73,7 +73,8 @@ public class AllAppsActivity extends ListActivity {
 	private String dataUsage = null;
 
 	private JSONObject jsonObj = new JSONObject();
-	private int jsonObjId = 0;
+	private JSONArray jsonArr = new JSONArray();
+	private int jsonArrId = 0;
 
 	private int useOrNot = 0; //default is 0, true is 1, false is 2.
 
@@ -353,40 +354,64 @@ public class AllAppsActivity extends ListActivity {
 
 				try {
 					// Here we convert Java Object to JSON
-					jsonObj.put("id", jsonObjId);
-					jsonObj.put("date", getDate()); // Set the first name/pair
-					jsonObj.put("clock", getClock());
-					jsonObj.put("datausageRx", rxBytes);
-					jsonObj.put("datausageTx", txBytes);
-					jsonObj.put("datausageSum", sumBytes);
+					JSONObject pnObj = new JSONObject();
+					pnObj.put("id", jsonArrId);
+					pnObj.put("date", getDate()); // Set the first name/pair
+					pnObj.put("clock", getClock());
+					pnObj.put("datausageRx", rxBytes);
+					pnObj.put("datausageTx", txBytes);
+					pnObj.put("datausageSum", sumBytes);
 
-					jsonObjId++;
+					jsonArr.put(pnObj);
+					jsonObj.put("databases", jsonArr);
 
-//            JSONObject jsonAdd = new JSONObject(); // we need another object to store the address
-//            jsonAdd.put("address", "infinite space, 000");
-//            jsonAdd.put("city", "Android city");
-//            jsonAdd.put("state", "World");	// We add the object to the main object
-//
-//            jsonObj.put("address", jsonAdd);	// and finally we add the phone number
-//            // In this case we need a json array to hold the java list
-//
-//            JSONArray jsonArr = new JSONArray();
-//
-//            for ( int i=0; i<3; i++) {
-//                JSONObject pnObj = new JSONObject();
-//                pnObj.put("num", i);
-//                pnObj.put("type", i+10);
-//                jsonArr.put(pnObj);
-//            }
-//
-//            jsonObj.put("phoneNumber", jsonArr);
+					JSONArray databasesTmp = jsonObj.getJSONArray("databases");
+					if(jsonArrId-1 >= 0) {
+						JSONObject cTmp = databasesTmp.getJSONObject(jsonArrId);
+						JSONObject cPrevious = databasesTmp.getJSONObject(jsonArrId - 1);
+						cTmp.put("datausageRxNow", rxBytes - Integer.parseInt(cPrevious.getString("datausageRx")));
+						cTmp.put("datausageTxNow", txBytes - Integer.parseInt(cPrevious.getString("datausageTx")));
+						cTmp.put("datausageSumNow", sumBytes - Integer.parseInt(cPrevious.getString("datausageSum")));
+					} else {
+						JSONObject cTmp = databasesTmp.getJSONObject(jsonArrId);
+						cTmp.put("datausageRxNow", 0);
+						cTmp.put("datausageTxNow", 0);
+						cTmp.put("datausageSumNow", 0);
+					}
+
+					jsonArrId++;
+
+				if(getSec().toString().equals("00")) {
+					try {
+						JSONArray databases = jsonObj.getJSONArray("databases");
+
+						for (int i = 0; i < databases.length(); i++) {
+							JSONObject c = databases.getJSONObject(i);
+
+							String id = c.getString("id");
+							String date = c.getString("date");
+							String clock = c.getString("clock");
+							String datausageRx = c.getString("datausageRx");
+							String datausageTx = c.getString("datausageTx");
+							String datausageSum = c.getString("datausageSum");
+							String datausageRxNow = c.getString("datausageRxNow");
+							String datausageTxNow = c.getString("datausageTxNow");
+							String datausageSumNow = c.getString("datausageSumNow"); 
+
+//							System.out.println("Richard: " + id + " " + date + " " + clock + " " + datausageRx + " " + datausageTx + " " + datausageSum);
+							System.out.println("Richard: " + id + " " + date + " " + clock + " " + datausageRx + " " + datausageTx + " " + datausageSum + " " + datausageRxNow + " " + datausageTxNow + " " + datausageSumNow);
+						}
+					}catch(JSONException ex) {
+						ex.printStackTrace();
+					}
+				}
 
 					System.out.println(jsonObj.toString());
 
 					RequestParams params = new RequestParams();
 					infoSentToServer = jsonObj.toString();
-					params.put("DATAUSAGE", infoSentToServer);
-					passToServer(params);
+//					params.put("DATAUSAGE", infoSentToServer);
+//					passToServer(params);
 
 				}
 				catch(JSONException ex) {
@@ -410,7 +435,7 @@ public class AllAppsActivity extends ListActivity {
 //				dataUsageOfApp[0][i*2+1] = dataUsageOfMorning[0][i*2+1] + dataUsageOfAfternoon[0][i*2+1] + dataUsageOfEvening[0][i*2+1] + dataUsageOfMidnight[0][i*2+1];
 //			}
 
-			System.out.println("Total: " + rxBytes + "Bytes" + " " + txBytes + "Bytes");
+//			System.out.println("Total: " + rxBytes + "Bytes" + " " + txBytes + "Bytes");
 //			for(int i=0; i<6; i++) {
 //				System.out.println(arrayApp[i] + "(" + arrayUid[i] + ")" + ": " + dataUsageOfApp[0][i*2] + "Bytes" + " " + dataUsageOfApp[0][i*2+1] + "Bytes");
 //			}
@@ -422,22 +447,22 @@ public class AllAppsActivity extends ListActivity {
 
 
 			// (TEST) Every minutes, return the APP data usage to server.
-			if(getMin().toString().equals("00")) {
-				writeToFile(CertainApprxBytes + "MB" + "," + CertainApptxBytes + "MB");
-				trafficDataInfo = readFromFile();
-
-				infoSentToServer = "10066" + "," + "YouTube" + "," + getCurrentTime() + "," + trafficDataInfo;
-
-				RequestParams params = new RequestParams();
-				params.put("DATAUSAGE", infoSentToServer);
-				passToServer(params);
-
-			}
+//			if(getMin().toString().equals("00")) {
+//				writeToFile(CertainApprxBytes + "MB" + "," + CertainApptxBytes + "MB");
+//				trafficDataInfo = readFromFile();
+//
+//				infoSentToServer = "10066" + "," + "YouTube" + "," + getCurrentTime() + "," + trafficDataInfo;
+//
+//				RequestParams params = new RequestParams();
+//				params.put("DATAUSAGE", infoSentToServer);
+//				passToServer(params);
+//
+//			}
 
 			// Every hour, return the APP data usage to server.
-			if(getClock().toString().equals("00:00")) {
-				showDialog();
-			}
+//			if(getClock().toString().equals("00:00")) {
+//				showDialog();
+//			}
 
 			mHandler.postDelayed(mRunnable, 1000);
 		}
