@@ -59,7 +59,7 @@ import org.json.*;
 
 
 public class AllAppsActivity extends ListActivity {
-	private String HOST = "192.168.11.50";
+	private String HOST = "192.168.43.176";
 
 	private PackageManager packageManager = null;
 	private List<ApplicationInfo> applist = null;
@@ -386,7 +386,7 @@ public class AllAppsActivity extends ListActivity {
 					RequestParams params = new RequestParams();
 					infoSentToServer = jsonObj.toString();
 					params.put("DATAUSAGE", infoSentToServer);
-					passToServerJSON(params,"CHT-ClockJSON");
+					passToServer(params);
 
 				}
 				catch(JSONException ex) {
@@ -430,7 +430,7 @@ public class AllAppsActivity extends ListActivity {
 
 				RequestParams params = new RequestParams();
 				params.put("DATAUSAGE", infoSentToServer);
-				passToServerJSON(params,"CHT-ClockJSON");
+				passToServer(params);
 
 			}
 
@@ -509,7 +509,7 @@ public class AllAppsActivity extends ListActivity {
 			public void onClick(DialogInterface dialog, int which) {
 				RequestParams params = new RequestParams();
 				params.put("RULE", "Yes,"+getCurrentTime()); //"Yes,"+ getCurrentTime() ->
-				passToServer(params,"CHT-RULE");
+				passToServer(params);
 				useOrNot = 1;
 			}
 		});
@@ -518,7 +518,7 @@ public class AllAppsActivity extends ListActivity {
 			public void onClick(DialogInterface dialog, int which) {
 				RequestParams params = new RequestParams();
 				params.put("RULE", "No,"+getCurrentTime());
-				passToServer(params,"CHT-RULE");
+				passToServer(params);
 				useOrNot = 2;
 			}
 		});
@@ -530,9 +530,9 @@ public class AllAppsActivity extends ListActivity {
 	}
 
 	//傳至Server
-	public void passToServer(RequestParams params,String category){
+	public void passToServer(RequestParams params){
 		AsyncHttpClient client = new AsyncHttpClient();
-		client.get("http://" + HOST + ":8080/CHTServer/hello/"+category, params, new AsyncHttpResponseHandler() {
+		client.get("http://" + HOST + ":8080/CHTServer/hello/CHT-SDP", params, new AsyncHttpResponseHandler() {
 			@Override
 			public void onSuccess(int i, Header[] headers, byte[] bytes) {
 				CharSequence cs = new String(bytes);
@@ -552,25 +552,4 @@ public class AllAppsActivity extends ListActivity {
 		});
 	}
 
-	public void passToServerJSON(RequestParams params,String category){
-		AsyncHttpClient client = new AsyncHttpClient();
-		client.post("http://" + HOST + ":8080/CHTServer/hello/"+category, params, new AsyncHttpResponseHandler() {
-			@Override
-			public void onSuccess(int i, Header[] headers, byte[] bytes) {
-				CharSequence cs = new String(bytes);
-				Toast toast = Toast.makeText(getApplicationContext(), cs, Toast.LENGTH_SHORT);    //toast 會閃現    用textView來接
-				toast.show();
-			}
-
-			@Override
-			public void onFailure(int i, Header[] headers, byte[] bytes, Throwable throwable) {
-				Log.e("InvokeWS", Integer.toString(i));
-				if (bytes != null) {
-					CharSequence cs = new String(bytes);
-					Toast toast = Toast.makeText(getApplicationContext(), cs, Toast.LENGTH_SHORT);
-					toast.show();
-				}
-			}
-		});
-	}
 }
