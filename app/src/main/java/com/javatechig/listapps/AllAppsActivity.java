@@ -35,6 +35,7 @@ import android.os.Handler;
 import android.widget.TextView;
 import android.util.Log;
 
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.loopj.android.http.*;
 import android.app.Application;
 import android.app.Application.ActivityLifecycleCallbacks;
@@ -56,6 +57,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import org.json.*;
+
+import static com.google.android.gms.internal.zzs.TAG;
 
 
 public class AllAppsActivity extends ListActivity {
@@ -149,6 +152,13 @@ public class AllAppsActivity extends ListActivity {
 
 		testButton = (Button) findViewById(R.id.testme);
 		testButton.setOnClickListener(startClickListener);
+
+
+		// [START subscribe_topics]
+		FirebaseMessaging.getInstance().subscribeToTopic("news");
+		// [END subscribe_topics]
+
+		System.out.println("topic?");
 
 //        intent = new Intent(AllAppsActivity.this,DialogService.class);
 
