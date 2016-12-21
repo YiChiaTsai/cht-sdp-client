@@ -24,6 +24,11 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:24.2.1'
     compile 'com.loopj.android:android-async-http:1.4.9'
-    compile 'com.google.firebase:firebase-messaging:9.0.0'
+
+    //Add this line
+    compile 'com.google.firebase:firebase-core:10.0.1'
+    compile 'com.google.firebase:firebase-messaging:10.0.1'
 }
+
+//Add this line
 apply plugin: 'com.google.gms.google-services'
