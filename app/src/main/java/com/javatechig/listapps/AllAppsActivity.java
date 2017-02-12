@@ -73,10 +73,10 @@ public class AllAppsActivity extends ListActivity {
 	private long mStartTotalTX = 0;
 //	private long mStartCertainAppRX = 0;
 //	private long mStartCertainAppTX = 0;
-	private String dataUsageSummary = null;
 
 	private JSONObject jsonObj = new JSONObject();
 	private JSONArray jsonArr = new JSONArray();
+	private JSONArray jsonArrApp = new JSONArray();
 	private int jsonArrId = 0;
 
 	private JSONObject jsonObjSummary = new JSONObject();
@@ -90,21 +90,33 @@ public class AllAppsActivity extends ListActivity {
 
 	String trafficDataInfo = "";
 	String infoSentToServer = "";
+	String flowSentToServer = "";
 
 	private double dataUsageOfDay = 0;
 	private double dataUsageOfMorning = 0;
 	private double dataUsageOfAfternoon = 0;
 	private double dataUsageOfEvening = 0;
 	private double dataUsageOfMidnight = 0;
+	private int limitOfDay = -1; //Exceed 150MB, set it as 1. Otherwise, set it as 0;
+	private int limitOfMorning = -1;
+	private int limitOfAfternoon = -1;
+	private int limitOfEvening = -1;
+	private int limitOfMidnight = -1;
+	private double exceedOfDay = 0;
+	private double exceedOfMorning = 0;
+	private double exceedOfAfternoon = 0;
+	private double exceedOfEvening = 0;
+	private double exceedOfMidnight = 0;
+	private String dataUsageSummary = "";
 
-	final private double thresholdOfDay = 150;
-	final private double thresholdOfMorning = 150;
-	final private double thresholdOfAfternoon = 150;
-	final private double thresholdOfEvening = 150;
-	final private double thresholdOfMidnight = 150;
-	private int[] arrayUid = new int[]{10136, 10137, 10066, 10139, 10140, 10141};
+	final private double thresholdOfDay = 150*1024;
+	final private double thresholdOfMorning = 150*1024;
+	final private double thresholdOfAfternoon = 150*1024;
+	final private double thresholdOfEvening = 150*1024;
+	final private double thresholdOfMidnight = 150*1024;
+	private int[] arrayUid = new int[]{10118, 10134, 10110, 10138, 10174, 10175};
 	private String[] arrayApp = new String[]{"Facebook","LINE","YouTube", "VoiceTube", "ClashofClans", "Knowledge"};
-//	private double[][] dataUsageOfApp = new double[365][12];
+	private double[] dataUsageOfApp = new double[6];
 //	private double[][] dataUsageOfMorning = new double[365][12]; //0-rx0, 1-tx0, 2-rx1, 3-tx1, ...
 //	private double[][] dataUsageOfAfternoon = new double[365][12];
 //	private double[][] dataUsageOfEvening = new double[365][12];
@@ -184,7 +196,7 @@ public class AllAppsActivity extends ListActivity {
 				break;
 			}
 			case R.id.menu_settings_ask_certainappdata: {
-				readFromFile();
+//				readFromFile();
 				displayDataDialog();
 				break;
 			}
@@ -307,22 +319,23 @@ public class AllAppsActivity extends ListActivity {
 		builder.show();
 	}
 
-	private void displayDataDialog() {
-		dataUsageOfDay = 0;
-		dataUsageOfMorning = 0;
-		dataUsageOfAfternoon = 0;
-		dataUsageOfEvening = 0;
-		dataUsageOfMidnight = 0;
+	private String calculateFeat() {
+		dataUsageOfDay = 0; dataUsageOfMorning = 0; dataUsageOfAfternoon = 0; dataUsageOfEvening = 0; dataUsageOfMidnight = 0;
+		limitOfDay = -1; //Exceed 150MB, set it as 1. Otherwise, set it as 0;
+		limitOfMorning = -1; limitOfAfternoon = -1; limitOfEvening = -1; limitOfMidnight = -1;
+		exceedOfDay = 0; exceedOfMorning = 0; exceedOfAfternoon = 0; exceedOfEvening = 0; exceedOfMidnight = 0;
 		dataUsageSummary= "";
+		String showdate = "";
 
 		try {
 			JSONArray databases = jsonObj.getJSONArray("databases");
-
+			JSONArray appdatabases = jsonObj.getJSONArray("appdatabases");
 			for (int i = 0; i < databases.length(); i++) {
 				JSONObject c = databases.getJSONObject(i);
 
 				String id = c.getString("id");
 				String date = c.getString("date");
+				showdate = date;
 				String clock = c.getString("clock");
 				String hr = c.getString("hr");
 				String datausageRx = c.getString("datausageRx");
@@ -331,9 +344,6 @@ public class AllAppsActivity extends ListActivity {
 				String datausageRxNow = c.getString("datausageRxNow");
 				String datausageTxNow = c.getString("datausageTxNow");
 				String datausageSumNow = c.getString("datausageSumNow");
-
-				dataUsageSummary += "RichardList: " + id + " " + date + " " + clock + " " + datausageRx + " " + datausageTx + " " + datausageSum + " " + datausageRxNow + " " + datausageTxNow + " " + datausageSumNow + "\n";
-				System.out.print(dataUsageSummary);
 
 				if (hr == "07" || hr == "08" || hr == "09" || hr == "10" || hr == "11") {
 					dataUsageOfMorning += Double.parseDouble(datausageSumNow);
@@ -347,43 +357,82 @@ public class AllAppsActivity extends ListActivity {
 				if (hr == "00" || hr == "01" || hr == "02" || hr == "03" || hr == "04" || hr == "05" || hr == "06") {
 					dataUsageOfMidnight += Double.parseDouble(datausageSumNow);
 				}
+
+//				dataUsageSummary += "List: id=" + id + " " + date + " " + clock + " hr=" + hr + " Rx=" + datausageRx + "KB Tx=" + datausageTx + "KB Sum=" + datausageSum + "KB RxNow=" + datausageRxNow + "KB TxNow=" + datausageTxNow + "KB SumNow=" + datausageSumNow + "\n";
+
 			}
 			dataUsageOfDay = dataUsageOfMorning + dataUsageOfAfternoon + dataUsageOfEvening + dataUsageOfMidnight;
 
-			JSONObject statisticsObj0 = new JSONObject();
-			statisticsObj0.put("date", getDate()); // Set the first name/pair
-			statisticsObj0.put("timeslot", "morning");
-			statisticsObj0.put("datausageSum", dataUsageOfMorning);
-			jsonArrSummary.put(statisticsObj0);
-			jsonObjSummary.put("databasesSummary", jsonArrSummary);
+			if (dataUsageOfDay > thresholdOfDay ) {
+				limitOfDay = 1;
+				exceedOfDay = dataUsageOfDay-thresholdOfDay;
+			}else {
+				limitOfDay = 0;
+				exceedOfDay = dataUsageOfDay-thresholdOfDay;
+			}
+			if (dataUsageOfMorning > thresholdOfMorning ) {
+				limitOfMorning = 1;
+				exceedOfMorning = dataUsageOfMorning-thresholdOfMorning;
+			}else {
+				limitOfMorning = 0;
+				exceedOfMorning = dataUsageOfMorning-thresholdOfMorning;
+			}
+			if (dataUsageOfAfternoon > thresholdOfAfternoon ) {
+				limitOfAfternoon = 1;
+				exceedOfAfternoon = dataUsageOfAfternoon-thresholdOfAfternoon;
+			}else {
+				limitOfAfternoon = 0;
+				exceedOfAfternoon = dataUsageOfAfternoon-thresholdOfAfternoon;
+			}
+			if (dataUsageOfEvening > thresholdOfEvening ) {
+				limitOfEvening = 1;
+				exceedOfEvening = dataUsageOfEvening-thresholdOfEvening;
+			}else {
+				limitOfEvening = 0;
+				exceedOfEvening = dataUsageOfEvening-thresholdOfEvening;
+			}
+			if (dataUsageOfMidnight > thresholdOfMidnight ) {
+				limitOfMidnight = 1;
+				exceedOfMidnight = dataUsageOfMidnight-thresholdOfMidnight;
+			}else {
+				limitOfMidnight = 0;
+				exceedOfMidnight = dataUsageOfMidnight-thresholdOfMidnight;
+			}
 
-			JSONObject statisticsObj1 = new JSONObject();
-			statisticsObj1.put("date", getDate()); // Set the first name/pair
-			statisticsObj1.put("timeslot", "afternoon");
-			statisticsObj1.put("datausageSum", dataUsageOfAfternoon);
-			jsonArrSummary.put(statisticsObj1);
-			jsonObjSummary.put("databasesSummary", jsonArrSummary);
-
-			JSONObject statisticsObj2 = new JSONObject();
-			statisticsObj2.put("date", getDate()); // Set the first name/pair
-			statisticsObj2.put("timeslot", "evening");
-			statisticsObj2.put("datausageSum", dataUsageOfEvening);
-			jsonArrSummary.put(statisticsObj2);
-			jsonObjSummary.put("databasesSummary", jsonArrSummary);
-
-			JSONObject statisticsObj3 = new JSONObject();
-			statisticsObj3.put("date", getDate()); // Set the first name/pair
-			statisticsObj3.put("timeslot", "midnight");
-			statisticsObj3.put("datausageSum", dataUsageOfMidnight);
-			jsonArrSummary.put(statisticsObj3);
-			jsonObjSummary.put("databasesSummary", jsonArrSummary);
-
-			JSONObject statisticsObj4 = new JSONObject();
-			statisticsObj4.put("date", getDate()); // Set the first name/pair
-			statisticsObj4.put("timeslot", "day");
-			statisticsObj4.put("datausageSum", dataUsageOfDay);
-			jsonArrSummary.put(statisticsObj4);
-			jsonObjSummary.put("databasesSummary", jsonArrSummary);
+//			JSONObject statisticsObj0 = new JSONObject();
+//			statisticsObj0.put("date", getDate()); // Set the first name/pair
+//			statisticsObj0.put("timeslot", "morning");
+//			statisticsObj0.put("datausageSum", dataUsageOfMorning);
+//			jsonArrSummary.put(statisticsObj0);
+//			jsonObjSummary.put("databasesSummary", jsonArrSummary);
+//
+//			JSONObject statisticsObj1 = new JSONObject();
+//			statisticsObj1.put("date", getDate()); // Set the first name/pair
+//			statisticsObj1.put("timeslot", "afternoon");
+//			statisticsObj1.put("datausageSum", dataUsageOfAfternoon);
+//			jsonArrSummary.put(statisticsObj1);
+//			jsonObjSummary.put("databasesSummary", jsonArrSummary);
+//
+//			JSONObject statisticsObj2 = new JSONObject();
+//			statisticsObj2.put("date", getDate()); // Set the first name/pair
+//			statisticsObj2.put("timeslot", "evening");
+//			statisticsObj2.put("datausageSum", dataUsageOfEvening);
+//			jsonArrSummary.put(statisticsObj2);
+//			jsonObjSummary.put("databasesSummary", jsonArrSummary);
+//
+//			JSONObject statisticsObj3 = new JSONObject();
+//			statisticsObj3.put("date", getDate()); // Set the first name/pair
+//			statisticsObj3.put("timeslot", "midnight");
+//			statisticsObj3.put("datausageSum", dataUsageOfMidnight);
+//			jsonArrSummary.put(statisticsObj3);
+//			jsonObjSummary.put("databasesSummary", jsonArrSummary);
+//
+//			JSONObject statisticsObj4 = new JSONObject();
+//			statisticsObj4.put("date", getDate()); // Set the first name/pair
+//			statisticsObj4.put("timeslot", "day");
+//			statisticsObj4.put("datausageSum", dataUsageOfDay);
+//			jsonArrSummary.put(statisticsObj4);
+//			jsonObjSummary.put("databasesSummary", jsonArrSummary);
 
 
 //			System.out.println("RichardJson: " + jsonObjSummary.toString());
@@ -391,12 +440,28 @@ public class AllAppsActivity extends ListActivity {
 			ex.printStackTrace();
 		}
 
+//		dataUsageSummary += "Json: " + jsonObjSummary.toString() + "\n";
+
+		dataUsageSummary += "Feature Summary: Date=" + showdate
+				+ " dataUsageOfDay=" + dataUsageOfDay + "KB" + " dataUsageOfMorning=" + dataUsageOfMorning + "KB" + " dataUsageOfAfternoon=" + dataUsageOfAfternoon + "KB"
+				+ " dataUsageOfEvening=" + dataUsageOfEvening + "KB" + " dataUsageOfMidnight=" + dataUsageOfMidnight + "KB"
+				+ "\n\nlimitOfDay=" + limitOfDay + " limitOfMorning=" + limitOfMorning + " limitOfAfternoon=" + limitOfAfternoon
+				+ " limitOfEvening=" + limitOfEvening + " limitOfMidnight=" + limitOfMidnight
+				+ "\n\nexceedOfDay=" + exceedOfDay + "KB" + " exceedOfMorning=" + exceedOfMorning + "KB" + " exceedOfAfternoon=" + exceedOfAfternoon + "KB"
+				+ " exceedOfEvening=" + exceedOfEvening + "KB" + " exceedOfMidnight=" + exceedOfMidnight + "KB"
+				+ "\n\n" + arrayApp[0] + "-" + arrayUid[0] + "=" + dataUsageOfApp[0] +"KB" + " " + arrayApp[1] + "-" + arrayUid[1] + "=" + dataUsageOfApp[1] +"KB"
+				+ " " + arrayApp[2] + "-" + arrayUid[2] + "=" + dataUsageOfApp[2] +"KB" + " " + arrayApp[3] + "-" + arrayUid[3] + "=" + dataUsageOfApp[3] +"KB"
+				+ " " + arrayApp[4] + "-" + arrayUid[4] + "=" + dataUsageOfApp[4] +"KB" + " " + arrayApp[5] + "-" + arrayUid[5] + "=" + dataUsageOfApp[5] +"KB";
+		System.out.print(dataUsageSummary);
+
+		return dataUsageSummary;
+	}
+
+	private void displayDataDialog() {
 
 		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setTitle(getString(R.string.ask_appdata_title));
-
-		dataUsageSummary += "RichardJson: " + jsonObjSummary.toString() + "\n";
-		builder.setMessage(dataUsageSummary);
+		builder.setMessage(calculateFeat());
 
 		builder.show();
 	}
@@ -480,14 +545,36 @@ public class AllAppsActivity extends ListActivity {
 	private final Runnable mRunnable = new Runnable() {
 		public void run() {
 
-			System.out.println( getCurrentTime() );
+//			System.out.println( getCurrentTime() );
 
-			long rxBytes = (TrafficStats.getTotalRxBytes()- mStartTotalRX)/1048576; //1048576 = 1024*1024 = 2^20
-			long txBytes = (TrafficStats.getTotalTxBytes()- mStartTotalTX)/1048576;
+			long rxBytes = (TrafficStats.getTotalRxBytes() - mStartTotalRX)/1024; //1048576 = 1024*1024 = 2^20
+			long txBytes = (TrafficStats.getTotalTxBytes() - mStartTotalTX)/1024;
 			long sumBytes = rxBytes + txBytes;
 
-			//Every hour, we call the DATAUSAGE function and send it to Server
-			if(Integer.parseInt(getSec()) % 10 == 0 ) { //  getSec().toString().equals("00")     getMin().toString().equals("00") && getSec().toString().equals("00")
+			for(int i=0; i<6; i++){
+				dataUsageOfApp[i] = ( (TrafficStats.getUidRxBytes(arrayUid[i]) - 0) + (TrafficStats.getUidTxBytes(arrayUid[i]) - 0) )/1024;
+			}
+
+			if(getMin().toString().equals("00") && getSec().toString().equals("00")) { //getHr().toString().equals("23") && getMin().toString().equals("59") && getSec().toString().equals("00")
+				try {
+					for (int i = 0; i < 6; i++) {
+						JSONObject appObj = new JSONObject();
+						appObj.put("id", arrayUid[i]);
+						appObj.put("application", arrayApp[i]);
+						appObj.put("date", getDate()); // Set the first name/pair
+						appObj.put("clock", getClock());
+						appObj.put("datausageSum", dataUsageOfApp[i]);
+
+						jsonArrApp.put(appObj);
+						jsonObj.put("appdatabases", jsonArrApp);
+					}
+				}catch(JSONException ex) {
+					ex.printStackTrace();
+				}
+			}
+
+			//Every hour (10 secs), we call the DATAUSAGE function and send it to Server
+			if(getMin().toString().equals("00") && getSec().toString().equals("00")) { //  Integer.parseInt(getSec()) % 10 == 0   getSec().toString().equals("00")     getMin().toString().equals("00") && getSec().toString().equals("00")
 
 				try {
 					// Here we convert Java Object to JSON
@@ -502,6 +589,7 @@ public class AllAppsActivity extends ListActivity {
 
 					jsonArr.put(pnObj);
 					jsonObj.put("databases", jsonArr);
+
 
 					JSONArray databasesTmp = jsonObj.getJSONArray("databases");
 					if(jsonArrId-1 >= 0) {
@@ -519,42 +607,63 @@ public class AllAppsActivity extends ListActivity {
 
 					jsonArrId++;
 
-				if(getSec().toString().equals("00")) {
-					try {
-						JSONArray databases = jsonObj.getJSONArray("databases");
+					if(getMin().toString().equals("00") && getSec().toString().equals("00")) {
+						try {
+							JSONArray databases = jsonObj.getJSONArray("databases");
 
-						for (int i = 0; i < databases.length(); i++) {
-							JSONObject c = databases.getJSONObject(i);
+							for (int i = 0; i < databases.length(); i++) {
+								JSONObject c = databases.getJSONObject(i);
 
-							String id = c.getString("id");
-							String date = c.getString("date");
-							String clock = c.getString("clock");
-							String datausageRx = c.getString("datausageRx");
-							String datausageTx = c.getString("datausageTx");
-							String datausageSum = c.getString("datausageSum");
-							String datausageRxNow = c.getString("datausageRxNow");
-							String datausageTxNow = c.getString("datausageTxNow");
-							String datausageSumNow = c.getString("datausageSumNow"); 
+								String id = c.getString("id");
+								String date = c.getString("date");
+								String clock = c.getString("clock");
+								String hr = c.getString("hr");
+								String datausageRx = c.getString("datausageRx");
+								String datausageTx = c.getString("datausageTx");
+								String datausageSum = c.getString("datausageSum");
+								String datausageRxNow = c.getString("datausageRxNow");
+								String datausageTxNow = c.getString("datausageTxNow");
+								String datausageSumNow = c.getString("datausageSumNow");
 
-							System.out.println("RichardList: " + id + " " + date + " " + clock + " " + datausageRx + " " + datausageTx + " " + datausageSum + " " + datausageRxNow + " " + datausageTxNow + " " + datausageSumNow);
+								System.out.println("List: id=" + id + " " + date + " " + clock + " hr=" + hr + " Rx=" + datausageRx + "KB Tx=" + datausageTx + "KB Sum=" + datausageSum + "KB RxNow=" + datausageRxNow + "KB TxNow=" + datausageTxNow + "KB SumNow=" + datausageSumNow);
+
+								if(getMin().toString().equals("00") && getSec().toString().equals("00")) {
+									int inthr1 = -1;
+									int inthr2 = -1;
+									if(hr.equals("00")) {
+										inthr1 = 23;
+										inthr2 = Integer.parseInt(hr);
+									}else {
+										inthr1 = Integer.parseInt(hr)-1;
+										inthr2 = Integer.parseInt(hr);
+									}
+
+									RequestParams paramsFlow = new RequestParams();
+									flowSentToServer = "Hr: " + inthr1 + "~" + inthr2 + ", DataUsage= " + datausageSumNow;
+
+									// 送流量的通道,  要送的東西放在flowToServer , 格式幫忙弄成json , 第一格放MAC ID ,  第二格當下時間 第三格用量
+									paramsFlow.put("flow", flowSentToServer);
+									passToServer(paramsFlow, "CHT-flow");
+								}
+
+								if(getHr().toString().equals("23") && getMin().toString().equals("59") && getSec().toString().equals("00")) {
+									RequestParams paramsFeat = new RequestParams();
+									infoSentToServer = calculateFeat();
+
+									// 送feature的通道,  要送的東西放在infoSentToServer , 格式幫忙弄成json , 第一格放MAC ID , 第二格開始放15個feature
+									paramsFeat.put("feature" , infoSentToServer);
+									passToServer(paramsFeat,"CHT-feature");
+
+									displayDataDialog();
+								}
+
+							}
+							System.out.println("Json: " + jsonObj.toString());
+
+						}catch(JSONException ex) {
+							ex.printStackTrace();
 						}
-						System.out.println("RichardJson: " + jsonObj.toString());
-					}catch(JSONException ex) {
-						ex.printStackTrace();
 					}
-				}
-
-					RequestParams params = new RequestParams();
-					infoSentToServer = jsonObj.toString();
-
-					// 送feature的通道,  要送的東西放在infoSentToServer , 格式幫忙弄成json , 第一格放MAC ID , 第二格開始放15個feature
-					params.put("feature" ,infoSentToServer);
-					passToServer(params,"CHT-feature");
-
-					// 送流量的通道,  要送的東西放在flowToServer , 格式幫忙弄成json , 第一格放MAC ID ,  第二格當下時間 第三格用量
-					params.put("flow" ,flowToServer);
-					passToServer(params,"CHT-flow");
-
 				}
 				catch(JSONException ex) {
 					ex.printStackTrace();
@@ -668,9 +777,9 @@ public class AllAppsActivity extends ListActivity {
 	//For dialog
 	private int showDialog(){
 		AlertDialog.Builder builder = new AlertDialog.Builder(AllAppsActivity.this);
-		builder.setTitle("有更優惠的時段唷");
-		builder.setMessage("是否確定要在此時使用軟體?");
-		builder.setPositiveButton("我就是要使用",new DialogInterface.OnClickListener(){
+		builder.setTitle("There are more discount available in next certain period!");
+		builder.setMessage("Are you sure to use Skype APP right now or later?");
+		builder.setPositiveButton("Yes, I wanna use it now!",new DialogInterface.OnClickListener(){
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				RequestParams params = new RequestParams();
@@ -679,7 +788,7 @@ public class AllAppsActivity extends ListActivity {
 				useOrNot = 1;
 			}
 		});
-		builder.setNegativeButton("算了，我下次再用", new DialogInterface.OnClickListener(){
+		builder.setNegativeButton("No, I can use it later!", new DialogInterface.OnClickListener(){
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				RequestParams params = new RequestParams();
@@ -688,9 +797,11 @@ public class AllAppsActivity extends ListActivity {
 				useOrNot = 2;
 			}
 		});
-		AlertDialog alert = builder.create();
-		alert.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);//設定提示框為系統提示框
-		alert.show();
+		builder.show();
+
+//		AlertDialog alert = builder.create();
+//		alert.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);//設定提示框為系統提示框
+//		alert.show();
 
 		return useOrNot;
 	}

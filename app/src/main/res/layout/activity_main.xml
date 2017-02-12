@@ -4,7 +4,7 @@
     android:orientation="vertical" >
 
     <Button
-        android:text="按按看"
+        android:text="Discount Available"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/testme" />
