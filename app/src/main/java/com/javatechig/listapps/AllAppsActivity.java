@@ -1,6 +1,7 @@
 package com.javatechig.listapps;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
@@ -117,6 +118,8 @@ public class AllAppsActivity extends ListActivity {
 	private int[] arrayUid = new int[]{10118, 10134, 10110, 10138, 10174, 10175};
 	private String[] arrayApp = new String[]{"Facebook","LINE","YouTube", "VoiceTube", "ClashofClans", "Knowledge"};
 	private double[] dataUsageOfApp = new double[6];
+	private double[] mStartAppRX = new double[6];
+	private double[] mStartAppTX = new double[6];
 //	private double[][] dataUsageOfMorning = new double[365][12]; //0-rx0, 1-tx0, 2-rx1, 3-tx1, ...
 //	private double[][] dataUsageOfAfternoon = new double[365][12];
 //	private double[][] dataUsageOfEvening = new double[365][12];
@@ -135,6 +138,10 @@ public class AllAppsActivity extends ListActivity {
 		mStartTotalRX = TrafficStats.getTotalRxBytes();
 		mStartTotalRX = TrafficStats.getTotalTxBytes();
 
+		for(int i=0; i<6; i++){
+			mStartAppRX[i] = TrafficStats.getUidRxBytes(arrayUid[i]);
+			mStartAppTX[i] = TrafficStats.getUidTxBytes(arrayUid[i]);
+		}
 //		for(int i=0; i<6; i++){
 //			dataUsageOfApp[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
 //			dataUsageOfApp[0][i*2] = TrafficStats.getUidTxBytes(arrayUid[i]);
@@ -325,17 +332,15 @@ public class AllAppsActivity extends ListActivity {
 		limitOfMorning = -1; limitOfAfternoon = -1; limitOfEvening = -1; limitOfMidnight = -1;
 		exceedOfDay = 0; exceedOfMorning = 0; exceedOfAfternoon = 0; exceedOfEvening = 0; exceedOfMidnight = 0;
 		dataUsageSummary= "";
-		String showdate = "";
 
 		try {
 			JSONArray databases = jsonObj.getJSONArray("databases");
-			JSONArray appdatabases = jsonObj.getJSONArray("appdatabases");
+//			JSONArray appdatabases = jsonObj.getJSONArray("appdatabases");
 			for (int i = 0; i < databases.length(); i++) {
 				JSONObject c = databases.getJSONObject(i);
 
 				String id = c.getString("id");
 				String date = c.getString("date");
-				showdate = date;
 				String clock = c.getString("clock");
 				String hr = c.getString("hr");
 				String datausageRx = c.getString("datausageRx");
@@ -345,16 +350,16 @@ public class AllAppsActivity extends ListActivity {
 				String datausageTxNow = c.getString("datausageTxNow");
 				String datausageSumNow = c.getString("datausageSumNow");
 
-				if (hr == "07" || hr == "08" || hr == "09" || hr == "10" || hr == "11") {
+				if (hr.toString().equals("07") || hr.toString().equals("08") || hr.toString().equals("09") || hr.toString().equals("10") || hr.toString().equals("11")) {
 					dataUsageOfMorning += Double.parseDouble(datausageSumNow);
 				}
-				if (hr == "12" || hr == "13" || hr == "14" || hr == "15" || hr == "16") {
+				if (hr.toString().equals("12") || hr.toString().equals("13") || hr.toString().equals("14") || hr.toString().equals("15") || hr.toString().equals("16")) {
 					dataUsageOfAfternoon += Double.parseDouble(datausageSumNow);
 				}
-				if (hr == "17" || hr == "18" || hr == "19" || hr == "20" || hr == "21" || hr == "22" || hr == "23") {
+				if (hr.toString().equals("17") || hr.toString().equals("18") || hr.toString().equals("19") || hr.toString().equals("20") || hr.toString().equals("21") || hr.toString().equals("22") || hr.toString().equals("23")) {
 					dataUsageOfEvening += Double.parseDouble(datausageSumNow);
 				}
-				if (hr == "00" || hr == "01" || hr == "02" || hr == "03" || hr == "04" || hr == "05" || hr == "06") {
+				if (hr.toString().equals("00") || hr.toString().equals("01") || hr.toString().equals("02") || hr.toString().equals("03") || hr.toString().equals("04") || hr.toString().equals("05") || hr.toString().equals("06")) {
 					dataUsageOfMidnight += Double.parseDouble(datausageSumNow);
 				}
 
@@ -399,6 +404,18 @@ public class AllAppsActivity extends ListActivity {
 				exceedOfMidnight = dataUsageOfMidnight-thresholdOfMidnight;
 			}
 
+			dataUsageSummary += "Feature Summary: Date=" + getDate()
+					+ " dataUsageOfDay=" + dataUsageOfDay + "KB" + " dataUsageOfMorning=" + dataUsageOfMorning + "KB" + " dataUsageOfAfternoon=" + dataUsageOfAfternoon + "KB"
+					+ " dataUsageOfEvening=" + dataUsageOfEvening + "KB" + " dataUsageOfMidnight=" + dataUsageOfMidnight + "KB"
+					+ "\n\nlimitOfDay=" + limitOfDay + " limitOfMorning=" + limitOfMorning + " limitOfAfternoon=" + limitOfAfternoon
+					+ " limitOfEvening=" + limitOfEvening + " limitOfMidnight=" + limitOfMidnight
+					+ "\n\nexceedOfDay=" + exceedOfDay + "KB" + " exceedOfMorning=" + exceedOfMorning + "KB" + " exceedOfAfternoon=" + exceedOfAfternoon + "KB"
+					+ " exceedOfEvening=" + exceedOfEvening + "KB" + " exceedOfMidnight=" + exceedOfMidnight + "KB"
+					+ "\n\n" + arrayApp[0] + "-" + arrayUid[0] + "=" + dataUsageOfApp[0] +"KB" + " " + arrayApp[1] + "-" + arrayUid[1] + "=" + dataUsageOfApp[1] +"KB"
+					+ " " + arrayApp[2] + "-" + arrayUid[2] + "=" + dataUsageOfApp[2] +"KB" + " " + arrayApp[3] + "-" + arrayUid[3] + "=" + dataUsageOfApp[3] +"KB"
+					+ " " + arrayApp[4] + "-" + arrayUid[4] + "=" + dataUsageOfApp[4] +"KB" + " " + arrayApp[5] + "-" + arrayUid[5] + "=" + dataUsageOfApp[5] +"KB\n";
+			System.out.print(dataUsageSummary);
+
 //			JSONObject statisticsObj0 = new JSONObject();
 //			statisticsObj0.put("date", getDate()); // Set the first name/pair
 //			statisticsObj0.put("timeslot", "morning");
@@ -442,28 +459,52 @@ public class AllAppsActivity extends ListActivity {
 
 //		dataUsageSummary += "Json: " + jsonObjSummary.toString() + "\n";
 
-		dataUsageSummary += "Feature Summary: Date=" + showdate
-				+ " dataUsageOfDay=" + dataUsageOfDay + "KB" + " dataUsageOfMorning=" + dataUsageOfMorning + "KB" + " dataUsageOfAfternoon=" + dataUsageOfAfternoon + "KB"
-				+ " dataUsageOfEvening=" + dataUsageOfEvening + "KB" + " dataUsageOfMidnight=" + dataUsageOfMidnight + "KB"
-				+ "\n\nlimitOfDay=" + limitOfDay + " limitOfMorning=" + limitOfMorning + " limitOfAfternoon=" + limitOfAfternoon
-				+ " limitOfEvening=" + limitOfEvening + " limitOfMidnight=" + limitOfMidnight
-				+ "\n\nexceedOfDay=" + exceedOfDay + "KB" + " exceedOfMorning=" + exceedOfMorning + "KB" + " exceedOfAfternoon=" + exceedOfAfternoon + "KB"
-				+ " exceedOfEvening=" + exceedOfEvening + "KB" + " exceedOfMidnight=" + exceedOfMidnight + "KB"
-				+ "\n\n" + arrayApp[0] + "-" + arrayUid[0] + "=" + dataUsageOfApp[0] +"KB" + " " + arrayApp[1] + "-" + arrayUid[1] + "=" + dataUsageOfApp[1] +"KB"
-				+ " " + arrayApp[2] + "-" + arrayUid[2] + "=" + dataUsageOfApp[2] +"KB" + " " + arrayApp[3] + "-" + arrayUid[3] + "=" + dataUsageOfApp[3] +"KB"
-				+ " " + arrayApp[4] + "-" + arrayUid[4] + "=" + dataUsageOfApp[4] +"KB" + " " + arrayApp[5] + "-" + arrayUid[5] + "=" + dataUsageOfApp[5] +"KB";
-		System.out.print(dataUsageSummary);
-
 		return dataUsageSummary;
 	}
 
 	private void displayDataDialog() {
 
+		String showMessage = calculateFeat();
 		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setTitle(getString(R.string.ask_appdata_title));
-		builder.setMessage(calculateFeat());
+		builder.setMessage(showMessage);
 
 		builder.show();
+	}
+
+	private Long getTotalBytesManual(int localUid){
+
+		File dir = new File("/proc/uid_stat/");
+		String[] children = dir.list();
+		if(!Arrays.asList(children).contains(String.valueOf(localUid))){
+			return 0L;
+		}
+		File uidFileDir = new File("/proc/uid_stat/"+String.valueOf(localUid));
+		File uidActualFileReceived = new File(uidFileDir,"tcp_rcv");
+		File uidActualFileSent = new File(uidFileDir,"tcp_snd");
+
+		String textReceived = "0";
+		String textSent = "0";
+
+		try {
+			BufferedReader brReceived = new BufferedReader(new FileReader(uidActualFileReceived));
+			BufferedReader brSent = new BufferedReader(new FileReader(uidActualFileSent));
+			String receivedLine;
+			String sentLine;
+
+			if ((receivedLine = brReceived.readLine()) != null) {
+				textReceived = receivedLine;
+			}
+			if ((sentLine = brSent.readLine()) != null) {
+				textSent = sentLine;
+			}
+
+		}
+		catch (IOException e) {
+
+		}
+		return Long.valueOf(textReceived).longValue() + Long.valueOf(textReceived).longValue();
+
 	}
 
 	@Override
@@ -545,17 +586,17 @@ public class AllAppsActivity extends ListActivity {
 	private final Runnable mRunnable = new Runnable() {
 		public void run() {
 
-//			System.out.println( getCurrentTime() );
+			System.out.println( getCurrentTime() );
 
 			long rxBytes = (TrafficStats.getTotalRxBytes() - mStartTotalRX)/1024; //1048576 = 1024*1024 = 2^20
 			long txBytes = (TrafficStats.getTotalTxBytes() - mStartTotalTX)/1024;
 			long sumBytes = rxBytes + txBytes;
 
 			for(int i=0; i<6; i++){
-				dataUsageOfApp[i] = ( (TrafficStats.getUidRxBytes(arrayUid[i]) - 0) + (TrafficStats.getUidTxBytes(arrayUid[i]) - 0) )/1024;
+				dataUsageOfApp[i] = getTotalBytesManual(arrayUid[i]) / 1024;
 			}
 
-			if(getMin().toString().equals("00") && getSec().toString().equals("00")) { //getHr().toString().equals("23") && getMin().toString().equals("59") && getSec().toString().equals("00")
+			if(getSec().toString().equals("00")) { //getMin().toString().equals("00") && getHr().toString().equals("23") && getMin().toString().equals("59") && getSec().toString().equals("00")
 				try {
 					for (int i = 0; i < 6; i++) {
 						JSONObject appObj = new JSONObject();
@@ -574,9 +615,13 @@ public class AllAppsActivity extends ListActivity {
 			}
 
 			//Every hour (10 secs), we call the DATAUSAGE function and send it to Server
-			if(getMin().toString().equals("00") && getSec().toString().equals("00")) { //  Integer.parseInt(getSec()) % 10 == 0   getSec().toString().equals("00")     getMin().toString().equals("00") && getSec().toString().equals("00")
+			if(getSec().toString().equals("00")) { // getMin().toString().equals("00") && getMin().toString().equals("00") && Integer.parseInt(getSec()) % 10 == 0   getSec().toString().equals("00")     getMin().toString().equals("00") && getSec().toString().equals("00")
 
 				try {
+//					JSONObject jsonLastRecord = new JSONObject(readFromFile());
+//
+//					writeToFile(jsonObj.toString());
+
 					// Here we convert Java Object to JSON
 					JSONObject pnObj = new JSONObject();
 					pnObj.put("id", jsonArrId);
@@ -589,7 +634,6 @@ public class AllAppsActivity extends ListActivity {
 
 					jsonArr.put(pnObj);
 					jsonObj.put("databases", jsonArr);
-
 
 					JSONArray databasesTmp = jsonObj.getJSONArray("databases");
 					if(jsonArrId-1 >= 0) {
@@ -607,7 +651,7 @@ public class AllAppsActivity extends ListActivity {
 
 					jsonArrId++;
 
-					if(getMin().toString().equals("00") && getSec().toString().equals("00")) {
+					if(getSec().toString().equals("00")) {
 						try {
 							JSONArray databases = jsonObj.getJSONArray("databases");
 
@@ -658,6 +702,7 @@ public class AllAppsActivity extends ListActivity {
 								}
 
 							}
+							calculateFeat();
 							System.out.println("Json: " + jsonObj.toString());
 
 						}catch(JSONException ex) {
@@ -762,7 +807,7 @@ public class AllAppsActivity extends ListActivity {
 				inputStream.close();
 				ret = stringBuilder.toString();
 
-				System.out.println("PPAP: " + ret);
+//				System.out.println("PPAP: " + ret);
 			}
 		}
 		catch (FileNotFoundException e) {
