@@ -1,5 +1,9 @@
 package com.javatechig.listapps;
 
+import android.provider.Settings.Secure;
+import android.content.Context;
+import android.telephony.TelephonyManager;
+import android.view.View;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,6 +48,8 @@ import android.app.Application.ActivityLifecycleCallbacks;
 import cz.msebera.android.httpclient.Header;
 
 import java.io.*;
+import java.util.UUID;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -109,6 +115,7 @@ public class AllAppsActivity extends ListActivity {
 	private double exceedOfEvening = 0;
 	private double exceedOfMidnight = 0;
 	private String dataUsageSummary = "";
+	private String deviceId = "5341231";
 
 	final private double thresholdOfDay = 150*1024;
 	final private double thresholdOfMorning = 150*1024;
@@ -135,6 +142,12 @@ public class AllAppsActivity extends ListActivity {
 
 		new LoadApplications().execute();
 
+		try{
+			deviceId = Secure.getString(this.getContentResolver(), Secure.ANDROID_ID);
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+
 		mStartTotalRX = TrafficStats.getTotalRxBytes();
 		mStartTotalRX = TrafficStats.getTotalTxBytes();
 
@@ -142,22 +155,6 @@ public class AllAppsActivity extends ListActivity {
 			mStartAppRX[i] = TrafficStats.getUidRxBytes(arrayUid[i]);
 			mStartAppTX[i] = TrafficStats.getUidTxBytes(arrayUid[i]);
 		}
-//		for(int i=0; i<6; i++){
-//			dataUsageOfApp[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
-//			dataUsageOfApp[0][i*2] = TrafficStats.getUidTxBytes(arrayUid[i]);
-//
-//			dataUsageOfMorning[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
-//			dataUsageOfMorning[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
-//
-//			dataUsageOfAfternoon[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
-//			dataUsageOfAfternoon[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
-//
-//			dataUsageOfEvening[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
-//			dataUsageOfEvening[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
-//
-//			dataUsageOfMidnight[0][i*2] = TrafficStats.getUidRxBytes(arrayUid[i]);
-//			dataUsageOfMidnight[0][i*2+1] = TrafficStats.getUidTxBytes(arrayUid[i]);
-//		}
 
 		if (mStartTotalRX == TrafficStats.UNSUPPORTED || mStartTotalRX == TrafficStats.UNSUPPORTED) {
 			AlertDialog.Builder alert = new AlertDialog.Builder(this);
@@ -596,7 +593,7 @@ public class AllAppsActivity extends ListActivity {
 				dataUsageOfApp[i] = getTotalBytesManual(arrayUid[i]) / 1024;
 			}
 
-			if(getSec().toString().equals("00")) { //getMin().toString().equals("00") && getHr().toString().equals("23") && getMin().toString().equals("59") && getSec().toString().equals("00")
+			if(getMin().toString().equals("00") && getSec().toString().equals("00")) { //getMin().toString().equals("00") && getHr().toString().equals("23") && getMin().toString().equals("59") && getSec().toString().equals("00")
 				try {
 					for (int i = 0; i < 6; i++) {
 						JSONObject appObj = new JSONObject();
@@ -615,7 +612,7 @@ public class AllAppsActivity extends ListActivity {
 			}
 
 			//Every hour (10 secs), we call the DATAUSAGE function and send it to Server
-			if(getSec().toString().equals("00")) { // getMin().toString().equals("00") && getMin().toString().equals("00") && Integer.parseInt(getSec()) % 10 == 0   getSec().toString().equals("00")     getMin().toString().equals("00") && getSec().toString().equals("00")
+			if(getMin().toString().equals("00") && getSec().toString().equals("00")) { // getMin().toString().equals("00") && getMin().toString().equals("00") && Integer.parseInt(getSec()) % 10 == 0   getSec().toString().equals("00")     getMin().toString().equals("00") && getSec().toString().equals("00")
 
 				try {
 //					JSONObject jsonLastRecord = new JSONObject(readFromFile());
@@ -651,7 +648,7 @@ public class AllAppsActivity extends ListActivity {
 
 					jsonArrId++;
 
-					if(getSec().toString().equals("00")) {
+					if(getMin().toString().equals("00") && getSec().toString().equals("00")) {
 						try {
 							JSONArray databases = jsonObj.getJSONArray("databases");
 
@@ -683,9 +680,9 @@ public class AllAppsActivity extends ListActivity {
 									}
 
 									RequestParams paramsFlow = new RequestParams();
-									flowSentToServer = "Hr: " + inthr1 + "~" + inthr2 + ", DataUsage= " + datausageSumNow;
+									flowSentToServer = "MAC ID: " + deviceId + " Hr: " + inthr1 + "~" + inthr2 + ", DataUsage= " + datausageSumNow;
 
-									// 送流量的通道,  要送的東西放在flowToServer , 格式幫忙弄成json , 第一格放MAC ID ,  第二格當下時間 第三格用量
+									// 送流量的通道,  要送的東西放在flowSentToServer , 格式幫忙弄成json , 第一格放MAC ID ,  第二格當下時間 第三格用量
 									paramsFlow.put("flow", flowSentToServer);
 									passToServer(paramsFlow, "CHT-flow");
 								}
