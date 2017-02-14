@@ -69,7 +69,7 @@ import static com.google.android.gms.internal.zzs.TAG;
 
 
 public class AllAppsActivity extends ListActivity {
-	private String HOST = "192.168.11.50";
+	private String HOST = "192.168.50.65";
 
 	private PackageManager packageManager = null;
 	private List<ApplicationInfo> applist = null;
@@ -83,12 +83,12 @@ public class AllAppsActivity extends ListActivity {
 
 	private JSONObject jsonObj = new JSONObject();
 	private JSONArray jsonArr = new JSONArray();
-	private JSONArray jsonArrApp = new JSONArray();
 	private int jsonArrId = 0;
 
-	private JSONObject jsonObjSummary = new JSONObject();
-	private JSONArray jsonArrSummary = new JSONArray();
-	private int jsonArrIdSummary = 0;
+	private JSONObject jsonObjFeature = new JSONObject();
+	private JSONArray jsonArrFeature = new JSONArray();
+	private JSONArray jsonArrApp = new JSONArray();
+	private int jsonArrIdFeature = 0;
 
 	private int useOrNot = 0; //default is 0, true is 1, false is 2.
 
@@ -328,6 +328,7 @@ public class AllAppsActivity extends ListActivity {
 		limitOfDay = -1; //Exceed 150MB, set it as 1. Otherwise, set it as 0;
 		limitOfMorning = -1; limitOfAfternoon = -1; limitOfEvening = -1; limitOfMidnight = -1;
 		exceedOfDay = 0; exceedOfMorning = 0; exceedOfAfternoon = 0; exceedOfEvening = 0; exceedOfMidnight = 0;
+		String macid = "";
 		dataUsageSummary= "";
 
 		try {
@@ -336,6 +337,7 @@ public class AllAppsActivity extends ListActivity {
 			for (int i = 0; i < databases.length(); i++) {
 				JSONObject c = databases.getJSONObject(i);
 
+				macid = c.getString("macid");
 				String id = c.getString("id");
 				String date = c.getString("date");
 				String clock = c.getString("clock");
@@ -401,62 +403,52 @@ public class AllAppsActivity extends ListActivity {
 				exceedOfMidnight = dataUsageOfMidnight-thresholdOfMidnight;
 			}
 
-			dataUsageSummary += "Feature Summary: Date=" + getDate()
-					+ " dataUsageOfDay=" + dataUsageOfDay + "KB" + " dataUsageOfMorning=" + dataUsageOfMorning + "KB" + " dataUsageOfAfternoon=" + dataUsageOfAfternoon + "KB"
-					+ " dataUsageOfEvening=" + dataUsageOfEvening + "KB" + " dataUsageOfMidnight=" + dataUsageOfMidnight + "KB"
-					+ "\n\nlimitOfDay=" + limitOfDay + " limitOfMorning=" + limitOfMorning + " limitOfAfternoon=" + limitOfAfternoon
-					+ " limitOfEvening=" + limitOfEvening + " limitOfMidnight=" + limitOfMidnight
-					+ "\n\nexceedOfDay=" + exceedOfDay + "KB" + " exceedOfMorning=" + exceedOfMorning + "KB" + " exceedOfAfternoon=" + exceedOfAfternoon + "KB"
-					+ " exceedOfEvening=" + exceedOfEvening + "KB" + " exceedOfMidnight=" + exceedOfMidnight + "KB"
+			dataUsageSummary += "Feature Summary: MACID=" + macid + "\nDate=" + getDate()
+					+ "\nDataUsageOfDay=" + dataUsageOfDay + "KB" + "\nDataUsageOfMorning=" + dataUsageOfMorning + "KB" + "\nDataUsageOfAfternoon=" + dataUsageOfAfternoon + "KB"
+					+ "\nDataUsageOfEvening=" + dataUsageOfEvening + "KB" + "\nDataUsageOfMidnight=" + dataUsageOfMidnight + "KB"
+					+ "\n\nLimitOfDay=" + limitOfDay + "\nLimitOfMorning=" + limitOfMorning + "\nLimitOfAfternoon=" + limitOfAfternoon
+					+ "\nLimitOfEvening=" + limitOfEvening + "\nLimitOfMidnight=" + limitOfMidnight
+					+ "\n\nExceedOfDay=" + exceedOfDay + "KB" + "\nExceedOfMorning=" + exceedOfMorning + "KB" + "\nExceedOfAfternoon=" + exceedOfAfternoon + "KB"
+					+ "\nExceedOfEvening=" + exceedOfEvening + "KB" + "\nExceedOfMidnight=" + exceedOfMidnight + "KB"
 					+ "\n\n" + arrayApp[0] + "-" + arrayUid[0] + "=" + dataUsageOfApp[0] +"KB" + " " + arrayApp[1] + "-" + arrayUid[1] + "=" + dataUsageOfApp[1] +"KB"
 					+ " " + arrayApp[2] + "-" + arrayUid[2] + "=" + dataUsageOfApp[2] +"KB" + " " + arrayApp[3] + "-" + arrayUid[3] + "=" + dataUsageOfApp[3] +"KB"
 					+ " " + arrayApp[4] + "-" + arrayUid[4] + "=" + dataUsageOfApp[4] +"KB" + " " + arrayApp[5] + "-" + arrayUid[5] + "=" + dataUsageOfApp[5] +"KB\n";
 			System.out.print(dataUsageSummary);
 
-//			JSONObject statisticsObj0 = new JSONObject();
-//			statisticsObj0.put("date", getDate()); // Set the first name/pair
-//			statisticsObj0.put("timeslot", "morning");
-//			statisticsObj0.put("datausageSum", dataUsageOfMorning);
-//			jsonArrSummary.put(statisticsObj0);
-//			jsonObjSummary.put("databasesSummary", jsonArrSummary);
-//
-//			JSONObject statisticsObj1 = new JSONObject();
-//			statisticsObj1.put("date", getDate()); // Set the first name/pair
-//			statisticsObj1.put("timeslot", "afternoon");
-//			statisticsObj1.put("datausageSum", dataUsageOfAfternoon);
-//			jsonArrSummary.put(statisticsObj1);
-//			jsonObjSummary.put("databasesSummary", jsonArrSummary);
-//
-//			JSONObject statisticsObj2 = new JSONObject();
-//			statisticsObj2.put("date", getDate()); // Set the first name/pair
-//			statisticsObj2.put("timeslot", "evening");
-//			statisticsObj2.put("datausageSum", dataUsageOfEvening);
-//			jsonArrSummary.put(statisticsObj2);
-//			jsonObjSummary.put("databasesSummary", jsonArrSummary);
-//
-//			JSONObject statisticsObj3 = new JSONObject();
-//			statisticsObj3.put("date", getDate()); // Set the first name/pair
-//			statisticsObj3.put("timeslot", "midnight");
-//			statisticsObj3.put("datausageSum", dataUsageOfMidnight);
-//			jsonArrSummary.put(statisticsObj3);
-//			jsonObjSummary.put("databasesSummary", jsonArrSummary);
-//
-//			JSONObject statisticsObj4 = new JSONObject();
-//			statisticsObj4.put("date", getDate()); // Set the first name/pair
-//			statisticsObj4.put("timeslot", "day");
-//			statisticsObj4.put("datausageSum", dataUsageOfDay);
-//			jsonArrSummary.put(statisticsObj4);
-//			jsonObjSummary.put("databasesSummary", jsonArrSummary);
+			JSONObject featureObj = new JSONObject();
+			featureObj.put("macid", deviceId);
+			featureObj.put("id", jsonArrIdFeature);
+			featureObj.put("date", getDate()); // Set the first name/pair
+			featureObj.put("clock", getClock());
+			featureObj.put("dataUsageOfDay", dataUsageOfDay);
+			featureObj.put("dataUsageOfMorning", dataUsageOfMorning);
+			featureObj.put("dataUsageOfAfternoon", dataUsageOfAfternoon);
+			featureObj.put("dataUsageOfEvening", dataUsageOfEvening);
+			featureObj.put("dataUsageOfMidnight", dataUsageOfMidnight);
+			featureObj.put("exceedOfDay", exceedOfDay);
+			featureObj.put("exceedOfMorning", exceedOfMorning);
+			featureObj.put("exceedOfAfternoon", exceedOfAfternoon);
+			featureObj.put("exceedOfEvening", exceedOfEvening);
+			featureObj.put("exceedOfMidnight", exceedOfMidnight);
+			featureObj.put("limitOfDay", limitOfDay);
+			featureObj.put("limitOfMorning", limitOfMorning);
+			featureObj.put("limitOfAfternoon", limitOfAfternoon);
+			featureObj.put("limitOfEvening", limitOfEvening);
+			featureObj.put("limitOfMidnight", limitOfMidnight);
 
+			jsonArrFeature.put(0,  featureObj);
+			jsonObjFeature.put("featuredatabases", jsonArrFeature);
 
-//			System.out.println("RichardJson: " + jsonObjSummary.toString());
+			jsonArrIdFeature++;
+			System.out.print(jsonObjFeature.toString());
+
 		}catch(JSONException ex) {
 			ex.printStackTrace();
 		}
 
 //		dataUsageSummary += "Json: " + jsonObjSummary.toString() + "\n";
 
-		return dataUsageSummary;
+		return jsonObjFeature.toString();
 	}
 
 	private void displayDataDialog() {
@@ -464,7 +456,7 @@ public class AllAppsActivity extends ListActivity {
 		String showMessage = calculateFeat();
 		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setTitle(getString(R.string.ask_appdata_title));
-		builder.setMessage(showMessage);
+		builder.setMessage(dataUsageSummary);
 
 		builder.show();
 	}
@@ -583,6 +575,18 @@ public class AllAppsActivity extends ListActivity {
 	private final Runnable mRunnable = new Runnable() {
 		public void run() {
 
+			int inthr1 = -1;
+			int inthr2 = -1;
+			String intervalhr = "";
+			if(getHr().equals("00")) {
+				inthr1 = 23;
+				inthr2 = Integer.parseInt(getHr());
+			}else {
+				inthr1 = Integer.parseInt(getHr())-1;
+				inthr2 = Integer.parseInt(getHr());
+			}
+			intervalhr = inthr1 + "~" + inthr2;
+
 			System.out.println( getCurrentTime() );
 
 			long rxBytes = (TrafficStats.getTotalRxBytes() - mStartTotalRX)/1024; //1048576 = 1024*1024 = 2^20
@@ -593,18 +597,18 @@ public class AllAppsActivity extends ListActivity {
 				dataUsageOfApp[i] = getTotalBytesManual(arrayUid[i]) / 1024;
 			}
 
-			if(getMin().toString().equals("00") && getSec().toString().equals("00")) { //getMin().toString().equals("00") && getHr().toString().equals("23") && getMin().toString().equals("59") && getSec().toString().equals("00")
+			if(Integer.parseInt(getSec()) % 10 == 0) { //Integer.parseInt(getSec()) % 10 == 0 getMin().toString().equals("00") && getSec().toString().equals("00") getMin().toString().equals("00") && getHr().toString().equals("23") && getMin().toString().equals("59") && getSec().toString().equals("00")
 				try {
 					for (int i = 0; i < 6; i++) {
 						JSONObject appObj = new JSONObject();
-						appObj.put("id", arrayUid[i]);
+						appObj.put("appid", arrayUid[i]);
 						appObj.put("application", arrayApp[i]);
 						appObj.put("date", getDate()); // Set the first name/pair
 						appObj.put("clock", getClock());
 						appObj.put("datausageSum", dataUsageOfApp[i]);
 
-						jsonArrApp.put(appObj);
-						jsonObj.put("appdatabases", jsonArrApp);
+						jsonArrApp.put(i, appObj);
+						jsonObjFeature.put("appdatabases", jsonArrApp);
 					}
 				}catch(JSONException ex) {
 					ex.printStackTrace();
@@ -612,7 +616,7 @@ public class AllAppsActivity extends ListActivity {
 			}
 
 			//Every hour (10 secs), we call the DATAUSAGE function and send it to Server
-			if(getMin().toString().equals("00") && getSec().toString().equals("00")) { // getMin().toString().equals("00") && getMin().toString().equals("00") && Integer.parseInt(getSec()) % 10 == 0   getSec().toString().equals("00")     getMin().toString().equals("00") && getSec().toString().equals("00")
+			if(Integer.parseInt(getSec()) % 10 == 0) { //getMin().toString().equals("00") && getSec().toString().equals("00") getMin().toString().equals("00") && getMin().toString().equals("00") && Integer.parseInt(getSec()) % 10 == 0   getSec().toString().equals("00")     getMin().toString().equals("00") && getSec().toString().equals("00")
 
 				try {
 //					JSONObject jsonLastRecord = new JSONObject(readFromFile());
@@ -621,10 +625,12 @@ public class AllAppsActivity extends ListActivity {
 
 					// Here we convert Java Object to JSON
 					JSONObject pnObj = new JSONObject();
+					pnObj.put("macid", deviceId);
 					pnObj.put("id", jsonArrId);
 					pnObj.put("date", getDate()); // Set the first name/pair
 					pnObj.put("clock", getClock());
 					pnObj.put("hr", getHr());
+					pnObj.put("hrintervalhr", intervalhr);
 					pnObj.put("datausageRx", rxBytes);
 					pnObj.put("datausageTx", txBytes);
 					pnObj.put("datausageSum", sumBytes);
@@ -633,7 +639,7 @@ public class AllAppsActivity extends ListActivity {
 					jsonObj.put("databases", jsonArr);
 
 					JSONArray databasesTmp = jsonObj.getJSONArray("databases");
-					if(jsonArrId-1 >= 0) {
+					if (jsonArrId - 1 >= 0) {
 						JSONObject cTmp = databasesTmp.getJSONObject(jsonArrId);
 						JSONObject cPrevious = databasesTmp.getJSONObject(jsonArrId - 1);
 						cTmp.put("datausageRxNow", rxBytes - Integer.parseInt(cPrevious.getString("datausageRx")));
@@ -647,67 +653,54 @@ public class AllAppsActivity extends ListActivity {
 					}
 
 					jsonArrId++;
-
-					if(getMin().toString().equals("00") && getSec().toString().equals("00")) {
-						try {
-							JSONArray databases = jsonObj.getJSONArray("databases");
-
-							for (int i = 0; i < databases.length(); i++) {
-								JSONObject c = databases.getJSONObject(i);
-
-								String id = c.getString("id");
-								String date = c.getString("date");
-								String clock = c.getString("clock");
-								String hr = c.getString("hr");
-								String datausageRx = c.getString("datausageRx");
-								String datausageTx = c.getString("datausageTx");
-								String datausageSum = c.getString("datausageSum");
-								String datausageRxNow = c.getString("datausageRxNow");
-								String datausageTxNow = c.getString("datausageTxNow");
-								String datausageSumNow = c.getString("datausageSumNow");
-
-								System.out.println("List: id=" + id + " " + date + " " + clock + " hr=" + hr + " Rx=" + datausageRx + "KB Tx=" + datausageTx + "KB Sum=" + datausageSum + "KB RxNow=" + datausageRxNow + "KB TxNow=" + datausageTxNow + "KB SumNow=" + datausageSumNow);
-
-								if(getMin().toString().equals("00") && getSec().toString().equals("00")) {
-									int inthr1 = -1;
-									int inthr2 = -1;
-									if(hr.equals("00")) {
-										inthr1 = 23;
-										inthr2 = Integer.parseInt(hr);
-									}else {
-										inthr1 = Integer.parseInt(hr)-1;
-										inthr2 = Integer.parseInt(hr);
-									}
-
-									RequestParams paramsFlow = new RequestParams();
-									flowSentToServer = "MAC ID: " + deviceId + " Hr: " + inthr1 + "~" + inthr2 + ", DataUsage= " + datausageSumNow;
-
-									// 送流量的通道,  要送的東西放在flowSentToServer , 格式幫忙弄成json , 第一格放MAC ID ,  第二格當下時間 第三格用量
-									paramsFlow.put("flow", flowSentToServer);
-									passToServer(paramsFlow, "CHT-flow");
-								}
-
-								if(getHr().toString().equals("23") && getMin().toString().equals("59") && getSec().toString().equals("00")) {
-									RequestParams paramsFeat = new RequestParams();
-									infoSentToServer = calculateFeat();
-
-									// 送feature的通道,  要送的東西放在infoSentToServer , 格式幫忙弄成json , 第一格放MAC ID , 第二格開始放15個feature
-									paramsFeat.put("feature" , infoSentToServer);
-									passToServer(paramsFeat,"CHT-feature");
-
-									displayDataDialog();
-								}
-
-							}
-							calculateFeat();
-							System.out.println("Json: " + jsonObj.toString());
-
-						}catch(JSONException ex) {
-							ex.printStackTrace();
-						}
-					}
+				} catch (JSONException ex) {
+					ex.printStackTrace();
 				}
-				catch(JSONException ex) {
+			}
+
+			if(Integer.parseInt(getSec()) % 10 == 0) {
+				try {
+					JSONArray databases = jsonObj.getJSONArray("databases");
+
+					for (int i = 0; i < databases.length(); i++) {
+						JSONObject c = databases.getJSONObject(i);
+
+						String macid = c.getString("macid");
+						String id = c.getString("id");
+						String date = c.getString("date");
+						String clock = c.getString("clock");
+						String hr = c.getString("hr");
+						String hrintervalhr = c.getString("hrintervalhr");
+						String datausageRx = c.getString("datausageRx");
+						String datausageTx = c.getString("datausageTx");
+						String datausageSum = c.getString("datausageSum");
+						String datausageRxNow = c.getString("datausageRxNow");
+						String datausageTxNow = c.getString("datausageTxNow");
+						String datausageSumNow = c.getString("datausageSumNow");
+
+						System.out.println("List: macid= " + macid + " id=" + id + " " + date + " " + clock + " intervalhr=" + intervalhr + " Rx=" + datausageRx + "KB Tx=" + datausageTx + "KB Sum=" + datausageSum + "KB RxNow=" + datausageRxNow + "KB TxNow=" + datausageTxNow + "KB SumNow=" + datausageSumNow);
+					}
+
+//							if(getSec().toString().equals("00")) { //getMin().toString().equals("00") && getSec().toString().equals("00")
+						RequestParams paramsFlow = new RequestParams();
+						flowSentToServer = jsonObj.toString();
+						System.out.println(flowSentToServer);
+
+						// 送流量的通道,  要送的東西放在flowSentToServer , 格式幫忙弄成json , 第一格放MAC ID ,  第二格當下時間 第三格用量
+						paramsFlow.put("flow", flowSentToServer);
+						passToServer(paramsFlow, "CHT-flow");
+//							}
+
+//							if(getSec().toString().equals("00")) { //getHr().toString().equals("23") && getMin().toString().equals("59") && getSec().toString().equals("00")
+						RequestParams paramsFeat = new RequestParams();
+						infoSentToServer = calculateFeat();
+
+						// 送feature的通道,  要送的東西放在infoSentToServer , 格式幫忙弄成json , 第一格放MAC ID , 第二格開始放15個feature
+						paramsFeat.put("feature" , infoSentToServer);
+						passToServer(paramsFeat,"CHT-feature");
+//							}
+
+				}catch(JSONException ex) {
 					ex.printStackTrace();
 				}
 			}
