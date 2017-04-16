@@ -1,14 +1,26 @@
 package com.javatechig.listapps;
 
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.provider.Settings;
 import android.provider.Settings.Secure;
 import android.content.Context;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.telephony.TelephonyManager;
 import android.view.View;
+
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
+
 import android.app.AlertDialog;
 import android.app.Application;
 import android.app.ListActivity;
@@ -42,6 +54,7 @@ import android.util.Log;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.loopj.android.http.*;
+
 import android.app.Application;
 import android.app.Application.ActivityLifecycleCallbacks;
 
@@ -69,698 +82,774 @@ import static com.google.android.gms.internal.zzs.TAG;
 
 
 public class AllAppsActivity extends ListActivity {
-	private String HOST = "192.168.50.65";
+    private String HOST = "192.168.50.65";
 
-	private PackageManager packageManager = null;
-	private List<ApplicationInfo> applist = null;
-	private ApplicationAdapter listadaptor = null;
+    private boolean getService = false;        //是否已開啟定位服務
+    private LocationManager mLocationManager;               //宣告定位管理控制
+    private String sLongitude = "";
+    private String sLatitude = "";
+    private double latitude = 0;
+    private double longitude = 0;
 
-	private Handler mHandler = new Handler();
-	private long mStartTotalRX = 0;
-	private long mStartTotalTX = 0;
-//	private long mStartCertainAppRX = 0;
-//	private long mStartCertainAppTX = 0;
+    private PackageManager packageManager = null;
+    private List<ApplicationInfo> applist = null;
+    private ApplicationAdapter listadaptor = null;
 
-	private JSONObject jsonObj = new JSONObject();
-	private JSONArray jsonArr = new JSONArray();
-	private int jsonArrId = 0;
+    private Handler mHandler = new Handler();
+    private long mStartTotalRX = 0;
+    private long mStartTotalTX = 0;
 
-	private JSONObject jsonObjFeature = new JSONObject();
-	private JSONArray jsonArrFeature = new JSONArray();
-	private JSONArray jsonArrApp = new JSONArray();
-	private int jsonArrIdFeature = 0;
+    private JSONObject jsonObj = new JSONObject();
+    private JSONArray jsonArr = new JSONArray();
+    private int jsonArrId = 0;
 
-	private int useOrNot = 0; //default is 0, true is 1, false is 2.
+    private JSONObject jsonObjFeature = new JSONObject();
+    private JSONArray jsonArrFeature = new JSONArray();
+    private JSONArray jsonArrApp = new JSONArray();
+    private int jsonArrIdFeature = 0;
 
-	private Intent intent;
-	private Button testButton;
+    private int useOrNot = 0; //default is 0, true is 1, false is 2.
 
-	String trafficDataInfo = "";
-	String infoSentToServer = "";
-	String flowSentToServer = "";
+    private Intent intent;
+    private Button testButton;
 
-	private double dataUsageOfDay = 0;
-	private double dataUsageOfMorning = 0;
-	private double dataUsageOfAfternoon = 0;
-	private double dataUsageOfEvening = 0;
-	private double dataUsageOfMidnight = 0;
-	private int limitOfDay = -1; //Exceed 150MB, set it as 1. Otherwise, set it as 0;
-	private int limitOfMorning = -1;
-	private int limitOfAfternoon = -1;
-	private int limitOfEvening = -1;
-	private int limitOfMidnight = -1;
-	private double exceedOfDay = 0;
-	private double exceedOfMorning = 0;
-	private double exceedOfAfternoon = 0;
-	private double exceedOfEvening = 0;
-	private double exceedOfMidnight = 0;
-	private String dataUsageSummary = "";
-	private String deviceId = "5341231";
+    String trafficDataInfo = "";
+    String infoSentToServer = "";
+    String flowSentToServer = "";
 
-	final private double thresholdOfDay = 150*1024;
-	final private double thresholdOfMorning = 150*1024;
-	final private double thresholdOfAfternoon = 150*1024;
-	final private double thresholdOfEvening = 150*1024;
-	final private double thresholdOfMidnight = 150*1024;
-	private int[] arrayUid = new int[]{10118, 10134, 10110, 10138, 10174, 10175};
-	private String[] arrayApp = new String[]{"Facebook","LINE","YouTube", "VoiceTube", "ClashofClans", "Knowledge"};
-	private double[] dataUsageOfApp = new double[6];
-	private double[] mStartAppRX = new double[6];
-	private double[] mStartAppTX = new double[6];
-//	private double[][] dataUsageOfMorning = new double[365][12]; //0-rx0, 1-tx0, 2-rx1, 3-tx1, ...
-//	private double[][] dataUsageOfAfternoon = new double[365][12];
-//	private double[][] dataUsageOfEvening = new double[365][12];
-//	private double[][] dataUsageOfMidnight = new double[365][12];
-//	private double[][] thresholdOfTime = new double[365][4]; //Exceed 150MB, set it 1. Otherwise, set it 0.
+    private double dataUsageOfDay = 0;
+    private double dataUsageOfMorning = 0;
+    private double dataUsageOfAfternoon = 0;
+    private double dataUsageOfEvening = 0;
+    private double dataUsageOfMidnight = 0;
+    private int limitOfDay = -1; //Exceed 150MB, set it as 1. Otherwise, set it as 0;
+    private int limitOfMorning = -1;
+    private int limitOfAfternoon = -1;
+    private int limitOfEvening = -1;
+    private int limitOfMidnight = -1;
+    private double exceedOfDay = 0;
+    private double exceedOfMorning = 0;
+    private double exceedOfAfternoon = 0;
+    private double exceedOfEvening = 0;
+    private double exceedOfMidnight = 0;
+    private String dataUsageSummary = "";
+    private String deviceId = "5341231";
 
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
+    final private double thresholdOfDay = 150 * 1024;
+    final private double thresholdOfMorning = 150 * 1024;
+    final private double thresholdOfAfternoon = 150 * 1024;
+    final private double thresholdOfEvening = 150 * 1024;
+    final private double thresholdOfMidnight = 150 * 1024;
+    private int[] arrayUid = new int[]{10118, 10134, 10110, 10138, 10174, 10175};
+    private String[] arrayApp = new String[]{"Facebook", "LINE", "YouTube", "VoiceTube", "ClashofClans", "Knowledge"};
+    private double[] dataUsageOfApp = new double[6];
+    private double[] mStartAppRX = new double[6];
+    private double[] mStartAppTX = new double[6];
 
-		packageManager = getPackageManager();
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-		new LoadApplications().execute();
+        //取得系統定位服務
+        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-		try{
-			deviceId = Secure.getString(this.getContentResolver(), Secure.ANDROID_ID);
-		}catch(Exception ex) {
-			ex.printStackTrace();
-		}
+        packageManager = getPackageManager();
 
-		mStartTotalRX = TrafficStats.getTotalRxBytes();
-		mStartTotalRX = TrafficStats.getTotalTxBytes();
+        new LoadApplications().execute();
 
-		for(int i=0; i<6; i++){
-			mStartAppRX[i] = TrafficStats.getUidRxBytes(arrayUid[i]);
-			mStartAppTX[i] = TrafficStats.getUidTxBytes(arrayUid[i]);
-		}
+        try {
+            deviceId = Secure.getString(this.getContentResolver(), Secure.ANDROID_ID);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
 
-		if (mStartTotalRX == TrafficStats.UNSUPPORTED || mStartTotalRX == TrafficStats.UNSUPPORTED) {
-			AlertDialog.Builder alert = new AlertDialog.Builder(this);
-			alert.setTitle("Uh Oh!");
-			alert.setMessage("Your device does not support traffic stat monitoring.");
-			alert.show();
-		} else {
-			mHandler.postDelayed(mRunnable, 1000);
-		}
+        mStartTotalRX = TrafficStats.getTotalRxBytes();
+        mStartTotalRX = TrafficStats.getTotalTxBytes();
 
+        for (int i = 0; i < 6; i++) {
+            mStartAppRX[i] = TrafficStats.getUidRxBytes(arrayUid[i]);
+            mStartAppTX[i] = TrafficStats.getUidTxBytes(arrayUid[i]);
+        }
 
-		testButton = (Button) findViewById(R.id.testme);
-		testButton.setOnClickListener(startClickListener);
+        if (mStartTotalRX == TrafficStats.UNSUPPORTED || mStartTotalRX == TrafficStats.UNSUPPORTED) {
+            AlertDialog.Builder alert = new AlertDialog.Builder(this);
+            alert.setTitle("Uh Oh!");
+            alert.setMessage("Your device does not support traffic stat monitoring.");
+            alert.show();
+        } else {
+            mHandler.postDelayed(mRunnable, 1000);
+        }
 
+        testButton = (Button) findViewById(R.id.testme);
+        testButton.setOnClickListener(startClickListener);
 
-		// [START subscribe_topics]
-		FirebaseMessaging.getInstance().subscribeToTopic("news");
-		// [END subscribe_topics]
-
-		System.out.println("topic?");
+        // [START subscribe_topics]
+        FirebaseMessaging.getInstance().subscribeToTopic("news");
+        // [END subscribe_topics]
+        System.out.println("topic?");
 
 //        intent = new Intent(AllAppsActivity.this,DialogService.class);
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
-	}
+            ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.ACCESS_COARSE_LOCATION);
+            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
 
-	public boolean onCreateOptionsMenu(Menu menu) {
-		MenuInflater inflater = getMenuInflater();
-		inflater.inflate(R.menu.menu, menu);
+        } else {
+            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10, locationListener);
+        }
+    }
 
-		return true;
-	}
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10, locationListener);
+        }
+    }
 
-	public boolean onOptionsItemSelected(MenuItem item) {
-		boolean result = true;
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu, menu);
 
-		switch (item.getItemId()) {
-			case R.id.menu_settings_ask_time: {
-				displayTimeDialog();
-				break;
-			}
-			case R.id.menu_settings_ask_certainappuid: {
-				displayUidDialog();
-				break;
-			}
-			case R.id.menu_settings_ask_certainappdata: {
+        return true;
+    }
+
+    public boolean onOptionsItemSelected(MenuItem item) {
+        boolean result = true;
+
+        switch (item.getItemId()) {
+            case R.id.menu_settings_ask_time: {
+                displayTimeDialog();
+                break;
+            }
+            case R.id.menu_settings_ask_certainappuid: {
+                displayUidDialog();
+                break;
+            }
+            case R.id.menu_settings_ask_certainappdata: {
 //				readFromFile();
-				displayDataDialog();
-				break;
-			}
-			default: {
-				result = super.onOptionsItemSelected(item);
+                displayDataDialog();
+                break;
+            }
+            case R.id.menu_settings_ask_map: {
+                displayMapDialog();
+                break;
+            }
+            default: {
+                result = super.onOptionsItemSelected(item);
 
-				break;
-			}
-		}
+                break;
+            }
+        }
 
-		return result;
-	}
+        return result;
+    }
 
-	public static String getCurrentTime() {
-		Calendar c = Calendar.getInstance();
-		System.out.println("Current time => "+c.getTime());
+    public static String getCurrentTime() {
+        Calendar c = Calendar.getInstance();
+        System.out.println("Current time => " + c.getTime());
 
-		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		String formattedDate = df.format(c.getTime());
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String formattedDate = df.format(c.getTime());
 
-		return formattedDate;
-	}
+        return formattedDate;
+    }
 
-	public static String getDate() {
-		Calendar c = Calendar.getInstance();
+    public static String getDate() {
+        Calendar c = Calendar.getInstance();
 
-		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-		String formattedDate = df.format(c.getTime());
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        String formattedDate = df.format(c.getTime());
 
-		return formattedDate;
-	}
-	public static String getClock() {
-		Calendar c = Calendar.getInstance();
+        return formattedDate;
+    }
 
-		SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
-		String formattedDate = df.format(c.getTime());
+    public static String getClock() {
+        Calendar c = Calendar.getInstance();
 
-		return formattedDate;
-	}
-	public static String getHr() {
-		Calendar c = Calendar.getInstance();
+        SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
+        String formattedDate = df.format(c.getTime());
 
-		SimpleDateFormat df = new SimpleDateFormat("HH");
-		String formattedDate = df.format(c.getTime());
+        return formattedDate;
+    }
 
-		return formattedDate;
-	}
-	public static String getMin() {
-		Calendar c = Calendar.getInstance();
+    public static String getHr() {
+        Calendar c = Calendar.getInstance();
 
-		SimpleDateFormat df = new SimpleDateFormat("mm");
-		String formattedDate = df.format(c.getTime());
+        SimpleDateFormat df = new SimpleDateFormat("HH");
+        String formattedDate = df.format(c.getTime());
 
-		return formattedDate;
-	}
-	public static String getSec() {
-		Calendar c = Calendar.getInstance();
+        return formattedDate;
+    }
 
-		SimpleDateFormat df = new SimpleDateFormat("ss");
-		String formattedDate = df.format(c.getTime());
+    public static String getMin() {
+        Calendar c = Calendar.getInstance();
 
-		return formattedDate;
-	}
-	public static String getYear() {
-		Calendar c = Calendar.getInstance();
+        SimpleDateFormat df = new SimpleDateFormat("mm");
+        String formattedDate = df.format(c.getTime());
 
-		SimpleDateFormat df = new SimpleDateFormat("yyyy");
-		String formattedDate = df.format(c.getTime());
+        return formattedDate;
+    }
 
-		return formattedDate;
-	}
-	public static String getMonth() {
-		Calendar c = Calendar.getInstance();
+    public static String getSec() {
+        Calendar c = Calendar.getInstance();
 
-		SimpleDateFormat df = new SimpleDateFormat("MM");
-		String formattedDate = df.format(c.getTime());
+        SimpleDateFormat df = new SimpleDateFormat("ss");
+        String formattedDate = df.format(c.getTime());
 
-		return formattedDate;
-	}
-	public static String getDay() {
-		Calendar c = Calendar.getInstance();
+        return formattedDate;
+    }
 
-		SimpleDateFormat df = new SimpleDateFormat("dd");
-		String formattedDate = df.format(c.getTime());
+    public static String getYear() {
+        Calendar c = Calendar.getInstance();
 
-		return formattedDate;
-	}
+        SimpleDateFormat df = new SimpleDateFormat("yyyy");
+        String formattedDate = df.format(c.getTime());
 
-	private void displayTimeDialog() {
-		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setTitle(getString(R.string.ask_time_title));
-		builder.setMessage(getCurrentTime());
+        return formattedDate;
+    }
 
-		builder.setPositiveButton("Know More", new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int id) {
-				Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/YiChiaTsai/cht-sdp"));
-				startActivity(browserIntent);
-				dialog.cancel();
-			}
-		});
-		builder.setNegativeButton("No Thanks!", new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int id) {
-				dialog.cancel();
-			}
-		});
+    public static String getMonth() {
+        Calendar c = Calendar.getInstance();
 
-		builder.show();
-	}
+        SimpleDateFormat df = new SimpleDateFormat("MM");
+        String formattedDate = df.format(c.getTime());
 
-	private void displayUidDialog() {
-		String Uid = "";
-		for(int i=0; i<6; i++){
-			Uid += arrayApp[i] + ": " + arrayUid[i] + "\n";
-		}
+        return formattedDate;
+    }
 
-		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setTitle(getString(R.string.ask_certainappuid_title));
-		builder.setMessage(Uid);
+    public static String getDay() {
+        Calendar c = Calendar.getInstance();
 
-		builder.show();
-	}
+        SimpleDateFormat df = new SimpleDateFormat("dd");
+        String formattedDate = df.format(c.getTime());
 
-	private String calculateFeat() {
-		dataUsageOfDay = 0; dataUsageOfMorning = 0; dataUsageOfAfternoon = 0; dataUsageOfEvening = 0; dataUsageOfMidnight = 0;
-		limitOfDay = -1; //Exceed 150MB, set it as 1. Otherwise, set it as 0;
-		limitOfMorning = -1; limitOfAfternoon = -1; limitOfEvening = -1; limitOfMidnight = -1;
-		exceedOfDay = 0; exceedOfMorning = 0; exceedOfAfternoon = 0; exceedOfEvening = 0; exceedOfMidnight = 0;
-		String macid = "";
-		dataUsageSummary= "";
+        return formattedDate;
+    }
 
-		try {
-			JSONArray databases = jsonObj.getJSONArray("databases");
+    private void displayTimeDialog() {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(getString(R.string.ask_time_title));
+        builder.setMessage(getCurrentTime());
+
+        builder.setPositiveButton("Know More", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/YiChiaTsai/cht-sdp"));
+                startActivity(browserIntent);
+                dialog.cancel();
+            }
+        });
+        builder.setNegativeButton("No Thanks!", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
+    }
+
+    private void displayUidDialog() {
+        String Uid = "";
+        for (int i = 0; i < 6; i++) {
+            Uid += arrayApp[i] + ": " + arrayUid[i] + "\n";
+        }
+
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(getString(R.string.ask_certainappuid_title));
+        builder.setMessage(Uid);
+
+        builder.show();
+    }
+
+    private String calculateFeat() {
+        dataUsageOfDay = 0;
+        dataUsageOfMorning = 0;
+        dataUsageOfAfternoon = 0;
+        dataUsageOfEvening = 0;
+        dataUsageOfMidnight = 0;
+        limitOfDay = -1; //Exceed 150MB, set it as 1. Otherwise, set it as 0;
+        limitOfMorning = -1;
+        limitOfAfternoon = -1;
+        limitOfEvening = -1;
+        limitOfMidnight = -1;
+        exceedOfDay = 0;
+        exceedOfMorning = 0;
+        exceedOfAfternoon = 0;
+        exceedOfEvening = 0;
+        exceedOfMidnight = 0;
+        String macid = "";
+        dataUsageSummary = "";
+
+        try {
+            JSONArray databases = jsonObj.getJSONArray("databases");
 //			JSONArray appdatabases = jsonObj.getJSONArray("appdatabases");
-			for (int i = 0; i < databases.length(); i++) {
-				JSONObject c = databases.getJSONObject(i);
+            for (int i = 0; i < databases.length(); i++) {
+                JSONObject c = databases.getJSONObject(i);
 
-				macid = c.getString("macid");
-				String id = c.getString("id");
-				String date = c.getString("date");
-				String clock = c.getString("clock");
-				String hr = c.getString("hr");
-				String datausageRx = c.getString("datausageRx");
-				String datausageTx = c.getString("datausageTx");
-				String datausageSum = c.getString("datausageSum");
-				String datausageRxNow = c.getString("datausageRxNow");
-				String datausageTxNow = c.getString("datausageTxNow");
-				String datausageSumNow = c.getString("datausageSumNow");
+                macid = c.getString("macid");
+                String id = c.getString("id");
+                String date = c.getString("date");
+                String clock = c.getString("clock");
+                String hr = c.getString("hr");
+                String datausageRx = c.getString("datausageRx");
+                String datausageTx = c.getString("datausageTx");
+                String datausageSum = c.getString("datausageSum");
+                String datausageRxNow = c.getString("datausageRxNow");
+                String datausageTxNow = c.getString("datausageTxNow");
+                String datausageSumNow = c.getString("datausageSumNow");
 
-				if (hr.toString().equals("07") || hr.toString().equals("08") || hr.toString().equals("09") || hr.toString().equals("10") || hr.toString().equals("11")) {
-					dataUsageOfMorning += Double.parseDouble(datausageSumNow);
-				}
-				if (hr.toString().equals("12") || hr.toString().equals("13") || hr.toString().equals("14") || hr.toString().equals("15") || hr.toString().equals("16")) {
-					dataUsageOfAfternoon += Double.parseDouble(datausageSumNow);
-				}
-				if (hr.toString().equals("17") || hr.toString().equals("18") || hr.toString().equals("19") || hr.toString().equals("20") || hr.toString().equals("21") || hr.toString().equals("22") || hr.toString().equals("23")) {
-					dataUsageOfEvening += Double.parseDouble(datausageSumNow);
-				}
-				if (hr.toString().equals("00") || hr.toString().equals("01") || hr.toString().equals("02") || hr.toString().equals("03") || hr.toString().equals("04") || hr.toString().equals("05") || hr.toString().equals("06")) {
-					dataUsageOfMidnight += Double.parseDouble(datausageSumNow);
-				}
+                if (hr.toString().equals("07") || hr.toString().equals("08") || hr.toString().equals("09") || hr.toString().equals("10") || hr.toString().equals("11")) {
+                    dataUsageOfMorning += Double.parseDouble(datausageSumNow);
+                }
+                if (hr.toString().equals("12") || hr.toString().equals("13") || hr.toString().equals("14") || hr.toString().equals("15") || hr.toString().equals("16")) {
+                    dataUsageOfAfternoon += Double.parseDouble(datausageSumNow);
+                }
+                if (hr.toString().equals("17") || hr.toString().equals("18") || hr.toString().equals("19") || hr.toString().equals("20") || hr.toString().equals("21") || hr.toString().equals("22") || hr.toString().equals("23")) {
+                    dataUsageOfEvening += Double.parseDouble(datausageSumNow);
+                }
+                if (hr.toString().equals("00") || hr.toString().equals("01") || hr.toString().equals("02") || hr.toString().equals("03") || hr.toString().equals("04") || hr.toString().equals("05") || hr.toString().equals("06")) {
+                    dataUsageOfMidnight += Double.parseDouble(datausageSumNow);
+                }
 
 //				dataUsageSummary += "List: id=" + id + " " + date + " " + clock + " hr=" + hr + " Rx=" + datausageRx + "KB Tx=" + datausageTx + "KB Sum=" + datausageSum + "KB RxNow=" + datausageRxNow + "KB TxNow=" + datausageTxNow + "KB SumNow=" + datausageSumNow + "\n";
 
-			}
-			dataUsageOfDay = dataUsageOfMorning + dataUsageOfAfternoon + dataUsageOfEvening + dataUsageOfMidnight;
+            }
+            dataUsageOfDay = dataUsageOfMorning + dataUsageOfAfternoon + dataUsageOfEvening + dataUsageOfMidnight;
 
-			if (dataUsageOfDay > thresholdOfDay ) {
-				limitOfDay = 1;
-				exceedOfDay = dataUsageOfDay-thresholdOfDay;
-			}else {
-				limitOfDay = 0;
-				exceedOfDay = dataUsageOfDay-thresholdOfDay;
-			}
-			if (dataUsageOfMorning > thresholdOfMorning ) {
-				limitOfMorning = 1;
-				exceedOfMorning = dataUsageOfMorning-thresholdOfMorning;
-			}else {
-				limitOfMorning = 0;
-				exceedOfMorning = dataUsageOfMorning-thresholdOfMorning;
-			}
-			if (dataUsageOfAfternoon > thresholdOfAfternoon ) {
-				limitOfAfternoon = 1;
-				exceedOfAfternoon = dataUsageOfAfternoon-thresholdOfAfternoon;
-			}else {
-				limitOfAfternoon = 0;
-				exceedOfAfternoon = dataUsageOfAfternoon-thresholdOfAfternoon;
-			}
-			if (dataUsageOfEvening > thresholdOfEvening ) {
-				limitOfEvening = 1;
-				exceedOfEvening = dataUsageOfEvening-thresholdOfEvening;
-			}else {
-				limitOfEvening = 0;
-				exceedOfEvening = dataUsageOfEvening-thresholdOfEvening;
-			}
-			if (dataUsageOfMidnight > thresholdOfMidnight ) {
-				limitOfMidnight = 1;
-				exceedOfMidnight = dataUsageOfMidnight-thresholdOfMidnight;
-			}else {
-				limitOfMidnight = 0;
-				exceedOfMidnight = dataUsageOfMidnight-thresholdOfMidnight;
-			}
+            if (dataUsageOfDay > thresholdOfDay) {
+                limitOfDay = 1;
+                exceedOfDay = dataUsageOfDay - thresholdOfDay;
+            } else {
+                limitOfDay = 0;
+                exceedOfDay = dataUsageOfDay - thresholdOfDay;
+            }
+            if (dataUsageOfMorning > thresholdOfMorning) {
+                limitOfMorning = 1;
+                exceedOfMorning = dataUsageOfMorning - thresholdOfMorning;
+            } else {
+                limitOfMorning = 0;
+                exceedOfMorning = dataUsageOfMorning - thresholdOfMorning;
+            }
+            if (dataUsageOfAfternoon > thresholdOfAfternoon) {
+                limitOfAfternoon = 1;
+                exceedOfAfternoon = dataUsageOfAfternoon - thresholdOfAfternoon;
+            } else {
+                limitOfAfternoon = 0;
+                exceedOfAfternoon = dataUsageOfAfternoon - thresholdOfAfternoon;
+            }
+            if (dataUsageOfEvening > thresholdOfEvening) {
+                limitOfEvening = 1;
+                exceedOfEvening = dataUsageOfEvening - thresholdOfEvening;
+            } else {
+                limitOfEvening = 0;
+                exceedOfEvening = dataUsageOfEvening - thresholdOfEvening;
+            }
+            if (dataUsageOfMidnight > thresholdOfMidnight) {
+                limitOfMidnight = 1;
+                exceedOfMidnight = dataUsageOfMidnight - thresholdOfMidnight;
+            } else {
+                limitOfMidnight = 0;
+                exceedOfMidnight = dataUsageOfMidnight - thresholdOfMidnight;
+            }
 
-			dataUsageSummary += "Feature Summary: MACID=" + macid + "\nDate=" + getDate()
-					+ "\nDataUsageOfDay=" + dataUsageOfDay + "KB" + "\nDataUsageOfMorning=" + dataUsageOfMorning + "KB" + "\nDataUsageOfAfternoon=" + dataUsageOfAfternoon + "KB"
-					+ "\nDataUsageOfEvening=" + dataUsageOfEvening + "KB" + "\nDataUsageOfMidnight=" + dataUsageOfMidnight + "KB"
-					+ "\n\nLimitOfDay=" + limitOfDay + "\nLimitOfMorning=" + limitOfMorning + "\nLimitOfAfternoon=" + limitOfAfternoon
-					+ "\nLimitOfEvening=" + limitOfEvening + "\nLimitOfMidnight=" + limitOfMidnight
-					+ "\n\nExceedOfDay=" + exceedOfDay + "KB" + "\nExceedOfMorning=" + exceedOfMorning + "KB" + "\nExceedOfAfternoon=" + exceedOfAfternoon + "KB"
-					+ "\nExceedOfEvening=" + exceedOfEvening + "KB" + "\nExceedOfMidnight=" + exceedOfMidnight + "KB"
-					+ "\n\n" + arrayApp[0] + "-" + arrayUid[0] + "=" + dataUsageOfApp[0] +"KB" + " " + arrayApp[1] + "-" + arrayUid[1] + "=" + dataUsageOfApp[1] +"KB"
-					+ " " + arrayApp[2] + "-" + arrayUid[2] + "=" + dataUsageOfApp[2] +"KB" + " " + arrayApp[3] + "-" + arrayUid[3] + "=" + dataUsageOfApp[3] +"KB"
-					+ " " + arrayApp[4] + "-" + arrayUid[4] + "=" + dataUsageOfApp[4] +"KB" + " " + arrayApp[5] + "-" + arrayUid[5] + "=" + dataUsageOfApp[5] +"KB\n";
-			System.out.print(dataUsageSummary);
+            dataUsageSummary += "Feature Summary: MACID=" + macid + "\nDate=" + getDate()
+                    + "\nDataUsageOfDay=" + dataUsageOfDay + "KB" + "\nDataUsageOfMorning=" + dataUsageOfMorning + "KB" + "\nDataUsageOfAfternoon=" + dataUsageOfAfternoon + "KB"
+                    + "\nDataUsageOfEvening=" + dataUsageOfEvening + "KB" + "\nDataUsageOfMidnight=" + dataUsageOfMidnight + "KB"
+                    + "\n\nLimitOfDay=" + limitOfDay + "\nLimitOfMorning=" + limitOfMorning + "\nLimitOfAfternoon=" + limitOfAfternoon
+                    + "\nLimitOfEvening=" + limitOfEvening + "\nLimitOfMidnight=" + limitOfMidnight
+                    + "\n\nExceedOfDay=" + exceedOfDay + "KB" + "\nExceedOfMorning=" + exceedOfMorning + "KB" + "\nExceedOfAfternoon=" + exceedOfAfternoon + "KB"
+                    + "\nExceedOfEvening=" + exceedOfEvening + "KB" + "\nExceedOfMidnight=" + exceedOfMidnight + "KB"
+                    + "\n\n" + arrayApp[0] + "-" + arrayUid[0] + "=" + dataUsageOfApp[0] + "KB" + " " + arrayApp[1] + "-" + arrayUid[1] + "=" + dataUsageOfApp[1] + "KB"
+                    + " " + arrayApp[2] + "-" + arrayUid[2] + "=" + dataUsageOfApp[2] + "KB" + " " + arrayApp[3] + "-" + arrayUid[3] + "=" + dataUsageOfApp[3] + "KB"
+                    + " " + arrayApp[4] + "-" + arrayUid[4] + "=" + dataUsageOfApp[4] + "KB" + " " + arrayApp[5] + "-" + arrayUid[5] + "=" + dataUsageOfApp[5] + "KB\n";
+            System.out.print(dataUsageSummary);
 
-			JSONObject featureObj = new JSONObject();
-			featureObj.put("macid", deviceId);
-			featureObj.put("id", jsonArrIdFeature);
-			featureObj.put("date", getDate()); // Set the first name/pair
-			featureObj.put("clock", getClock());
-			featureObj.put("dataUsageOfDay", dataUsageOfDay);
-			featureObj.put("dataUsageOfMorning", dataUsageOfMorning);
-			featureObj.put("dataUsageOfAfternoon", dataUsageOfAfternoon);
-			featureObj.put("dataUsageOfEvening", dataUsageOfEvening);
-			featureObj.put("dataUsageOfMidnight", dataUsageOfMidnight);
-			featureObj.put("exceedOfDay", exceedOfDay);
-			featureObj.put("exceedOfMorning", exceedOfMorning);
-			featureObj.put("exceedOfAfternoon", exceedOfAfternoon);
-			featureObj.put("exceedOfEvening", exceedOfEvening);
-			featureObj.put("exceedOfMidnight", exceedOfMidnight);
-			featureObj.put("limitOfDay", limitOfDay);
-			featureObj.put("limitOfMorning", limitOfMorning);
-			featureObj.put("limitOfAfternoon", limitOfAfternoon);
-			featureObj.put("limitOfEvening", limitOfEvening);
-			featureObj.put("limitOfMidnight", limitOfMidnight);
+            JSONObject featureObj = new JSONObject();
+            featureObj.put("macid", deviceId);
+            featureObj.put("id", jsonArrIdFeature);
+            featureObj.put("date", getDate()); // Set the first name/pair
+            featureObj.put("clock", getClock());
+            featureObj.put("dataUsageOfDay", dataUsageOfDay);
+            featureObj.put("dataUsageOfMorning", dataUsageOfMorning);
+            featureObj.put("dataUsageOfAfternoon", dataUsageOfAfternoon);
+            featureObj.put("dataUsageOfEvening", dataUsageOfEvening);
+            featureObj.put("dataUsageOfMidnight", dataUsageOfMidnight);
+            featureObj.put("exceedOfDay", exceedOfDay);
+            featureObj.put("exceedOfMorning", exceedOfMorning);
+            featureObj.put("exceedOfAfternoon", exceedOfAfternoon);
+            featureObj.put("exceedOfEvening", exceedOfEvening);
+            featureObj.put("exceedOfMidnight", exceedOfMidnight);
+            featureObj.put("limitOfDay", limitOfDay);
+            featureObj.put("limitOfMorning", limitOfMorning);
+            featureObj.put("limitOfAfternoon", limitOfAfternoon);
+            featureObj.put("limitOfEvening", limitOfEvening);
+            featureObj.put("limitOfMidnight", limitOfMidnight);
 
-			jsonArrFeature.put(0,  featureObj);
-			jsonObjFeature.put("featuredatabases", jsonArrFeature);
+            jsonArrFeature.put(0, featureObj);
+            jsonObjFeature.put("featuredatabases", jsonArrFeature);
 
-			jsonArrIdFeature++;
-			System.out.print(jsonObjFeature.toString());
+            jsonArrIdFeature++;
+            System.out.print(jsonObjFeature.toString());
 
-		}catch(JSONException ex) {
-			ex.printStackTrace();
-		}
+        } catch (JSONException ex) {
+            ex.printStackTrace();
+        }
 
 //		dataUsageSummary += "Json: " + jsonObjSummary.toString() + "\n";
 
-		return jsonObjFeature.toString();
-	}
+        return jsonObjFeature.toString();
+    }
 
-	private void displayDataDialog() {
+    private void displayDataDialog() {
 
-		String showMessage = calculateFeat();
-		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setTitle(getString(R.string.ask_appdata_title));
-		builder.setMessage(dataUsageSummary);
+        String showMessage = calculateFeat();
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(getString(R.string.ask_appdata_title));
+        builder.setMessage(dataUsageSummary);
 
-		builder.show();
-	}
+        builder.show();
+    }
 
-	private Long getTotalBytesManual(int localUid){
+    private void displayMapDialog() {
+        locationServiceInitial();
 
-		File dir = new File("/proc/uid_stat/");
-		String[] children = dir.list();
-		if(!Arrays.asList(children).contains(String.valueOf(localUid))){
-			return 0L;
-		}
-		File uidFileDir = new File("/proc/uid_stat/"+String.valueOf(localUid));
-		File uidActualFileReceived = new File(uidFileDir,"tcp_rcv");
-		File uidActualFileSent = new File(uidFileDir,"tcp_snd");
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(getString(R.string.ask_map_title));
+        builder.setMessage("Location: " + sLongitude + ", " + sLatitude);
 
-		String textReceived = "0";
-		String textSent = "0";
+        builder.show();
+    }
 
-		try {
-			BufferedReader brReceived = new BufferedReader(new FileReader(uidActualFileReceived));
-			BufferedReader brSent = new BufferedReader(new FileReader(uidActualFileSent));
-			String receivedLine;
-			String sentLine;
+    private void locationServiceInitial() {
 
-			if ((receivedLine = brReceived.readLine()) != null) {
-				textReceived = receivedLine;
-			}
-			if ((sentLine = brSent.readLine()) != null) {
-				textSent = sentLine;
-			}
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
 
-		}
-		catch (IOException e) {
+        Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);    //使用GPS定位座標
 
-		}
-		return Long.valueOf(textReceived).longValue() + Long.valueOf(textReceived).longValue();
+        longitude = location.getLongitude();
+        sLongitude = "Initial" + String.valueOf(longitude);
+        latitude = location.getLatitude();
+        sLatitude = "Initial" + String.valueOf(latitude);
 
-	}
+        System.out.println("GreatLocation: " + sLongitude + ", " + sLatitude);
+    }
 
-	@Override
-	protected void onListItemClick(ListView l, View v, int position, long id) {
-		super.onListItemClick(l, v, position, id);
+    private final LocationListener locationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            longitude = location.getLongitude();
+            sLongitude = "Listener" + String.valueOf(longitude);
+            latitude = location.getLatitude();
+            sLatitude = "Listener" + String.valueOf(latitude);
+        }
 
-		ApplicationInfo app = applist.get(position);
-		try {
-			Intent intent = packageManager
-					.getLaunchIntentForPackage(app.packageName);
+        @Override
+        public void onStatusChanged(String s, int i, Bundle bundle) {
 
-			if (null != intent) {
-				showDialog();
-				if(useOrNot == 1)
-					startActivity(intent);
+        }
 
-			}
-		} catch (ActivityNotFoundException e) {
-			Toast.makeText(AllAppsActivity.this, e.getMessage(),
-					Toast.LENGTH_LONG).show();
-		} catch (Exception e) {
-			Toast.makeText(AllAppsActivity.this, e.getMessage(),
-					Toast.LENGTH_LONG).show();
-		}
-	}
+        @Override
+        public void onProviderEnabled(String s) {
 
-	private List<ApplicationInfo> checkForLaunchIntent(List<ApplicationInfo> list) {
-		ArrayList<ApplicationInfo> applist = new ArrayList<ApplicationInfo>();
-		for (ApplicationInfo info : list) {
-			try {
-				if (null != packageManager.getLaunchIntentForPackage(info.packageName)) {
-					applist.add(info);
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
+        }
 
-		return applist;
-	}
+        @Override
+        public void onProviderDisabled(String s) {
 
-	private class LoadApplications extends AsyncTask<Void, Void, Void> {
-		private ProgressDialog progress = null;
+        }
+    };
 
-		@Override
-		protected Void doInBackground(Void... params) {
-			applist = checkForLaunchIntent(packageManager.getInstalledApplications(PackageManager.GET_META_DATA));
-			listadaptor = new ApplicationAdapter(AllAppsActivity.this,
-					R.layout.snippet_list_row, applist);
 
-			return null;
-		}
 
-		@Override
-		protected void onCancelled() {
-			super.onCancelled();
-		}
+    private Long getTotalBytesManual(int localUid) {
 
-		@Override
-		protected void onPostExecute(Void result) {
-			setListAdapter(listadaptor);
-			progress.dismiss();
-			super.onPostExecute(result);
-		}
+        File dir = new File("/proc/uid_stat/");
+        String[] children = dir.list();
+        if (!Arrays.asList(children).contains(String.valueOf(localUid))) {
+            return 0L;
+        }
+        File uidFileDir = new File("/proc/uid_stat/" + String.valueOf(localUid));
+        File uidActualFileReceived = new File(uidFileDir, "tcp_rcv");
+        File uidActualFileSent = new File(uidFileDir, "tcp_snd");
 
-		@Override
-		protected void onPreExecute() {
-			progress = ProgressDialog.show(AllAppsActivity.this, null,
-					"Loading application info...");
-			super.onPreExecute();
-		}
+        String textReceived = "0";
+        String textSent = "0";
 
-		@Override
-		protected void onProgressUpdate(Void... values) {
-			super.onProgressUpdate(values);
-		}
-	}
+        try {
+            BufferedReader brReceived = new BufferedReader(new FileReader(uidActualFileReceived));
+            BufferedReader brSent = new BufferedReader(new FileReader(uidActualFileSent));
+            String receivedLine;
+            String sentLine;
 
-	private final Runnable mRunnable = new Runnable() {
-		public void run() {
+            if ((receivedLine = brReceived.readLine()) != null) {
+                textReceived = receivedLine;
+            }
+            if ((sentLine = brSent.readLine()) != null) {
+                textSent = sentLine;
+            }
 
-			int inthr1 = -1;
-			int inthr2 = -1;
-			String intervalhr = "";
-			if(getHr().equals("00")) {
-				inthr1 = 23;
-				inthr2 = Integer.parseInt(getHr());
-			}else {
-				inthr1 = Integer.parseInt(getHr())-1;
-				inthr2 = Integer.parseInt(getHr());
-			}
-			intervalhr = inthr1 + "~" + inthr2;
+        } catch (IOException e) {
 
-			System.out.println( getCurrentTime() );
+        }
+        return Long.valueOf(textReceived).longValue() + Long.valueOf(textReceived).longValue();
 
-			long rxBytes = (TrafficStats.getTotalRxBytes() - mStartTotalRX)/1024; //1048576 = 1024*1024 = 2^20
-			long txBytes = (TrafficStats.getTotalTxBytes() - mStartTotalTX)/1024;
-			long sumBytes = rxBytes + txBytes;
+    }
 
-			for(int i=0; i<6; i++){
-				dataUsageOfApp[i] = getTotalBytesManual(arrayUid[i]) / 1024;
-			}
+    @Override
+    protected void onListItemClick(ListView l, View v, int position, long id) {
+        super.onListItemClick(l, v, position, id);
 
-			if(Integer.parseInt(getSec()) % 10 == 0) { //Integer.parseInt(getSec()) % 10 == 0 getMin().toString().equals("00") && getSec().toString().equals("00") getMin().toString().equals("00") && getHr().toString().equals("23") && getMin().toString().equals("59") && getSec().toString().equals("00")
-				try {
-					for (int i = 0; i < 6; i++) {
-						JSONObject appObj = new JSONObject();
-						appObj.put("appid", arrayUid[i]);
-						appObj.put("application", arrayApp[i]);
-						appObj.put("date", getDate()); // Set the first name/pair
-						appObj.put("clock", getClock());
-						appObj.put("datausageSum", dataUsageOfApp[i]);
+        ApplicationInfo app = applist.get(position);
+        try {
+            Intent intent = packageManager
+                    .getLaunchIntentForPackage(app.packageName);
 
-						jsonArrApp.put(i, appObj);
-						jsonObjFeature.put("appdatabases", jsonArrApp);
-					}
-				}catch(JSONException ex) {
-					ex.printStackTrace();
-				}
-			}
+            if (null != intent) {
+                showDialog();
+                if (useOrNot == 1)
+                    startActivity(intent);
 
-			//Every hour (10 secs), we call the DATAUSAGE function and send it to Server
-			if(Integer.parseInt(getSec()) % 10 == 0) { //getMin().toString().equals("00") && getSec().toString().equals("00") getMin().toString().equals("00") && getMin().toString().equals("00") && Integer.parseInt(getSec()) % 10 == 0   getSec().toString().equals("00")     getMin().toString().equals("00") && getSec().toString().equals("00")
+            }
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(AllAppsActivity.this, e.getMessage(),
+                    Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Toast.makeText(AllAppsActivity.this, e.getMessage(),
+                    Toast.LENGTH_LONG).show();
+        }
+    }
 
-				try {
+    private List<ApplicationInfo> checkForLaunchIntent(List<ApplicationInfo> list) {
+        ArrayList<ApplicationInfo> applist = new ArrayList<ApplicationInfo>();
+        for (ApplicationInfo info : list) {
+            try {
+                if (null != packageManager.getLaunchIntentForPackage(info.packageName)) {
+                    applist.add(info);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return applist;
+    }
+
+    private class LoadApplications extends AsyncTask<Void, Void, Void> {
+        private ProgressDialog progress = null;
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            applist = checkForLaunchIntent(packageManager.getInstalledApplications(PackageManager.GET_META_DATA));
+            listadaptor = new ApplicationAdapter(AllAppsActivity.this,
+                    R.layout.snippet_list_row, applist);
+
+            return null;
+        }
+
+        @Override
+        protected void onCancelled() {
+            super.onCancelled();
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            setListAdapter(listadaptor);
+            progress.dismiss();
+            super.onPostExecute(result);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            progress = ProgressDialog.show(AllAppsActivity.this, null,
+                    "Loading application info...");
+            super.onPreExecute();
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            super.onProgressUpdate(values);
+        }
+    }
+
+    private final Runnable mRunnable = new Runnable() {
+        public void run() {
+
+            int inthr1 = -1;
+            int inthr2 = -1;
+            String intervalhr = "";
+            if (getHr().equals("00")) {
+                inthr1 = 23;
+                inthr2 = Integer.parseInt(getHr());
+            } else {
+                inthr1 = Integer.parseInt(getHr()) - 1;
+                inthr2 = Integer.parseInt(getHr());
+            }
+            intervalhr = inthr1 + "~" + inthr2;
+
+            System.out.println(getCurrentTime());
+
+            long rxBytes = (TrafficStats.getTotalRxBytes() - mStartTotalRX) / 1024; //1048576 = 1024*1024 = 2^20
+            long txBytes = (TrafficStats.getTotalTxBytes() - mStartTotalTX) / 1024;
+            long sumBytes = rxBytes + txBytes;
+
+            for (int i = 0; i < 6; i++) {
+                dataUsageOfApp[i] = getTotalBytesManual(arrayUid[i]) / 1024;
+            }
+
+            if (Integer.parseInt(getSec()) % 10 == 0) { //Integer.parseInt(getSec()) % 10 == 0 getMin().toString().equals("00") && getSec().toString().equals("00") getMin().toString().equals("00") && getHr().toString().equals("23") && getMin().toString().equals("59") && getSec().toString().equals("00")
+                try {
+                    for (int i = 0; i < 6; i++) {
+                        JSONObject appObj = new JSONObject();
+                        appObj.put("appid", arrayUid[i]);
+                        appObj.put("application", arrayApp[i]);
+                        appObj.put("date", getDate()); // Set the first name/pair
+                        appObj.put("clock", getClock());
+                        appObj.put("datausageSum", dataUsageOfApp[i]);
+
+                        jsonArrApp.put(i, appObj);
+                        jsonObjFeature.put("appdatabases", jsonArrApp);
+                    }
+                } catch (JSONException ex) {
+                    ex.printStackTrace();
+                }
+            }
+
+            //Every hour (10 secs), we call the DATAUSAGE function and send it to Server
+            if (Integer.parseInt(getSec()) % 10 == 0) { //getMin().toString().equals("00") && getSec().toString().equals("00") getMin().toString().equals("00") && getMin().toString().equals("00") && Integer.parseInt(getSec()) % 10 == 0   getSec().toString().equals("00")     getMin().toString().equals("00") && getSec().toString().equals("00")
+
+                try {
 //					JSONObject jsonLastRecord = new JSONObject(readFromFile());
 //
 //					writeToFile(jsonObj.toString());
 
-					// Here we convert Java Object to JSON
-					JSONObject pnObj = new JSONObject();
-					pnObj.put("macid", deviceId);
-					pnObj.put("id", jsonArrId);
-					pnObj.put("date", getDate()); // Set the first name/pair
-					pnObj.put("clock", getClock());
-					pnObj.put("hr", getHr());
-					pnObj.put("hrintervalhr", intervalhr);
-					pnObj.put("datausageRx", rxBytes);
-					pnObj.put("datausageTx", txBytes);
-					pnObj.put("datausageSum", sumBytes);
+                    // Here we convert Java Object to JSON
+                    JSONObject pnObj = new JSONObject();
+                    pnObj.put("macid", deviceId);
+                    pnObj.put("id", jsonArrId);
+                    pnObj.put("date", getDate()); // Set the first name/pair
+                    pnObj.put("clock", getClock());
+                    pnObj.put("hr", getHr());
+                    pnObj.put("hrintervalhr", intervalhr);
+                    pnObj.put("datausageRx", rxBytes);
+                    pnObj.put("datausageTx", txBytes);
+                    pnObj.put("datausageSum", sumBytes);
 
-					jsonArr.put(pnObj);
-					jsonObj.put("databases", jsonArr);
+                    jsonArr.put(pnObj);
+                    jsonObj.put("databases", jsonArr);
 
-					JSONArray databasesTmp = jsonObj.getJSONArray("databases");
-					if (jsonArrId - 1 >= 0) {
-						JSONObject cTmp = databasesTmp.getJSONObject(jsonArrId);
-						JSONObject cPrevious = databasesTmp.getJSONObject(jsonArrId - 1);
-						cTmp.put("datausageRxNow", rxBytes - Integer.parseInt(cPrevious.getString("datausageRx")));
-						cTmp.put("datausageTxNow", txBytes - Integer.parseInt(cPrevious.getString("datausageTx")));
-						cTmp.put("datausageSumNow", sumBytes - Integer.parseInt(cPrevious.getString("datausageSum")));
-					} else {
-						JSONObject cTmp = databasesTmp.getJSONObject(jsonArrId);
-						cTmp.put("datausageRxNow", 0);
-						cTmp.put("datausageTxNow", 0);
-						cTmp.put("datausageSumNow", 0);
-					}
+                    JSONArray databasesTmp = jsonObj.getJSONArray("databases");
+                    if (jsonArrId - 1 >= 0) {
+                        JSONObject cTmp = databasesTmp.getJSONObject(jsonArrId);
+                        JSONObject cPrevious = databasesTmp.getJSONObject(jsonArrId - 1);
+                        cTmp.put("datausageRxNow", rxBytes - Integer.parseInt(cPrevious.getString("datausageRx")));
+                        cTmp.put("datausageTxNow", txBytes - Integer.parseInt(cPrevious.getString("datausageTx")));
+                        cTmp.put("datausageSumNow", sumBytes - Integer.parseInt(cPrevious.getString("datausageSum")));
+                    } else {
+                        JSONObject cTmp = databasesTmp.getJSONObject(jsonArrId);
+                        cTmp.put("datausageRxNow", 0);
+                        cTmp.put("datausageTxNow", 0);
+                        cTmp.put("datausageSumNow", 0);
+                    }
 
-					jsonArrId++;
-				} catch (JSONException ex) {
-					ex.printStackTrace();
-				}
-			}
+                    jsonArrId++;
+                } catch (JSONException ex) {
+                    ex.printStackTrace();
+                }
+            }
 
-			if(Integer.parseInt(getSec()) % 10 == 0) {
-				try {
-					JSONArray databases = jsonObj.getJSONArray("databases");
+            if (Integer.parseInt(getSec()) % 10 == 0) {
+                try {
+                    JSONArray databases = jsonObj.getJSONArray("databases");
 
-					for (int i = 0; i < databases.length(); i++) {
-						JSONObject c = databases.getJSONObject(i);
+                    for (int i = 0; i < databases.length(); i++) {
+                        JSONObject c = databases.getJSONObject(i);
 
-						String macid = c.getString("macid");
-						String id = c.getString("id");
-						String date = c.getString("date");
-						String clock = c.getString("clock");
-						String hr = c.getString("hr");
-						String hrintervalhr = c.getString("hrintervalhr");
-						String datausageRx = c.getString("datausageRx");
-						String datausageTx = c.getString("datausageTx");
-						String datausageSum = c.getString("datausageSum");
-						String datausageRxNow = c.getString("datausageRxNow");
-						String datausageTxNow = c.getString("datausageTxNow");
-						String datausageSumNow = c.getString("datausageSumNow");
+                        String macid = c.getString("macid");
+                        String id = c.getString("id");
+                        String date = c.getString("date");
+                        String clock = c.getString("clock");
+                        String hr = c.getString("hr");
+                        String hrintervalhr = c.getString("hrintervalhr");
+                        String datausageRx = c.getString("datausageRx");
+                        String datausageTx = c.getString("datausageTx");
+                        String datausageSum = c.getString("datausageSum");
+                        String datausageRxNow = c.getString("datausageRxNow");
+                        String datausageTxNow = c.getString("datausageTxNow");
+                        String datausageSumNow = c.getString("datausageSumNow");
 
-						System.out.println("List: macid= " + macid + " id=" + id + " " + date + " " + clock + " intervalhr=" + intervalhr + " Rx=" + datausageRx + "KB Tx=" + datausageTx + "KB Sum=" + datausageSum + "KB RxNow=" + datausageRxNow + "KB TxNow=" + datausageTxNow + "KB SumNow=" + datausageSumNow);
-					}
+                        System.out.println("List: macid= " + macid + " id=" + id + " " + date + " " + clock + " intervalhr=" + intervalhr + " Rx=" + datausageRx + "KB Tx=" + datausageTx + "KB Sum=" + datausageSum + "KB RxNow=" + datausageRxNow + "KB TxNow=" + datausageTxNow + "KB SumNow=" + datausageSumNow);
+                    }
 
 //							if(getSec().toString().equals("00")) { //getMin().toString().equals("00") && getSec().toString().equals("00")
-						RequestParams paramsFlow = new RequestParams();
-						flowSentToServer = jsonObj.toString();
-						System.out.println(flowSentToServer);
+                    RequestParams paramsFlow = new RequestParams();
+                    flowSentToServer = jsonObj.toString();
+                    System.out.println(flowSentToServer);
 
-						// 送流量的通道,  要送的東西放在flowSentToServer , 格式幫忙弄成json , 第一格放MAC ID ,  第二格當下時間 第三格用量
-						paramsFlow.put("flow", flowSentToServer);
-						passToServer(paramsFlow, "CHT-flow");
+                    // 送流量的通道,  要送的東西放在flowSentToServer , 格式幫忙弄成json , 第一格放MAC ID ,  第二格當下時間 第三格用量
+                    paramsFlow.put("flow", flowSentToServer);
+                    passToServer(paramsFlow, "CHT-flow");
 //							}
 
 //							if(getSec().toString().equals("00")) { //getHr().toString().equals("23") && getMin().toString().equals("59") && getSec().toString().equals("00")
-						RequestParams paramsFeat = new RequestParams();
-						infoSentToServer = calculateFeat();
+                    RequestParams paramsFeat = new RequestParams();
+                    infoSentToServer = calculateFeat();
 
-						// 送feature的通道,  要送的東西放在infoSentToServer , 格式幫忙弄成json , 第一格放MAC ID , 第二格開始放15個feature
-						paramsFeat.put("feature" , infoSentToServer);
-						passToServer(paramsFeat,"CHT-feature");
+                    // 送feature的通道,  要送的東西放在infoSentToServer , 格式幫忙弄成json , 第一格放MAC ID , 第二格開始放15個feature
+                    paramsFeat.put("feature", infoSentToServer);
+                    passToServer(paramsFeat, "CHT-feature");
 //							}
 
-				}catch(JSONException ex) {
-					ex.printStackTrace();
-				}
-			}
+                } catch (JSONException ex) {
+                    ex.printStackTrace();
+                }
+            }
 
-//			for(int i=0; i<6; i++){
-//				int time = Integer.parseInt(getOclock());
-//				if(time>=0 && time < 700){
-//					dataUsageOfMidnight[0][i*2] = TrafficStats.getUidRxBytes(10066) - dataUsageOfMidnight[0][i*2];
-//				}
-//				if(time>=700 && time < 1200){
-//
-//				}
-//
-//				dataUsageOfApp[0][i*2] = dataUsageOfMorning[0][i*2] + dataUsageOfAfternoon[0][i*2] + dataUsageOfEvening[0][i*2] + dataUsageOfMidnight[0][i*2];
-//				dataUsageOfApp[0][i*2+1] = dataUsageOfMorning[0][i*2+1] + dataUsageOfAfternoon[0][i*2+1] + dataUsageOfEvening[0][i*2+1] + dataUsageOfMidnight[0][i*2+1];
-//			}
+            mHandler.postDelayed(mRunnable, 1000);
+        }
+    };
 
-//			System.out.println("Total: " + rxBytes + "Bytes" + " " + txBytes + "Bytes");
-//			for(int i=0; i<6; i++) {
-//				System.out.println(arrayApp[i] + "(" + arrayUid[i] + ")" + ": " + dataUsageOfApp[0][i*2] + "Bytes" + " " + dataUsageOfApp[0][i*2+1] + "Bytes");
-//			}
-
-//			System.out.println( Integer.parseInt(getOclock()) );
-
-//			long CertainApprxBytes = (TrafficStats.getUidRxBytes(10066)- mStartCertainAppRX)/1048576;
-//			long CertainApptxBytes = (TrafficStats.getUidTxBytes(10066)- mStartCertainAppTX)/1048576;
-//
-//			dataUsage = "Total: " + rxBytes + "MB" + " " + txBytes + "MB" + "\n" + "CertainApp: " + CertainApprxBytes + "MB" + " " + CertainApptxBytes + "MB";
-
-
-			// (TEST) Every minutes, return the APP data usage to server.
-//			if(getMin().toString().equals("00")) {
-//				writeToFile(CertainApprxBytes + "MB" + "," + CertainApptxBytes + "MB");
-//				trafficDataInfo = readFromFile();
-//
-//				infoSentToServer = "10066" + "," + "YouTube" + "," + getCurrentTime() + "," + trafficDataInfo;
-//
-//				RequestParams params = new RequestParams();
-//				params.put("DATAUSAGE", infoSentToServer);
-//				passToServer(params);
-//
-//			}
-
-			// Every hour, return the APP data usage to server.
-//			if(getClock().toString().equals("00:00")) {
-//				showDialog();
-//			}
-
-			mHandler.postDelayed(mRunnable, 1000);
-		}
-	};
-
-	private Button.OnClickListener startClickListener = new Button.OnClickListener() {
-		public void onClick(View arg0) {
+    private Button.OnClickListener startClickListener = new Button.OnClickListener() {
+        public void onClick(View arg0) {
 //			startService(intent);
-			showDialog();
-		}
-	};
+            showDialog();
+        }
+    };
+
+    @Override
+    protected void onResume() {
+        // TODO Auto-generated method stub
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        // TODO Auto-generated method stub
+        super.onPause();
+    }
 
 	public void onDestroy(){
+        super.onDestroy();
 		stopService(intent);
 	}
 
@@ -833,10 +922,6 @@ public class AllAppsActivity extends ListActivity {
 			}
 		});
 		builder.show();
-
-//		AlertDialog alert = builder.create();
-//		alert.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);//設定提示框為系統提示框
-//		alert.show();
 
 		return useOrNot;
 	}

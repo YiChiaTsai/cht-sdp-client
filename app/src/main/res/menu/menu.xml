@@ -18,5 +18,11 @@
         android:showAsAction="always|withText"
         android:title="@string/action_settings_ask_certainappdata"/>
 
+    <item
+        android:id="@+id/menu_settings_ask_map"
+        android:orderInCategory="101"
+        android:showAsAction="always|withText"
+        android:title="@string/action_settings_ask_map"/>
+
 </menu>
     <!--android:icon="@android:drawable/ic_menu_info_details"-->
