@@ -133,7 +133,11 @@ public class AllAppsActivity extends ListActivity {
     private double exceedOfEvening = 0;
     private double exceedOfMidnight = 0;
     private String dataUsageSummary = "";
-    private String deviceId = "5341231";
+    private static String deviceId = "5341231";
+
+    public static String getdeviceId(){
+        return deviceId;
+    }
 
     final private double thresholdOfDay = 150 * 1024;
     final private double thresholdOfMorning = 150 * 1024;
