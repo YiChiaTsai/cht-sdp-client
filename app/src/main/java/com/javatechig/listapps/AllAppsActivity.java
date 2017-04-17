@@ -82,7 +82,7 @@ import static com.google.android.gms.internal.zzs.TAG;
 
 
 public class AllAppsActivity extends ListActivity {
-    private String HOST = "192.168.50.65";
+    private String HOST = "192.168.43.176";
 
     private boolean getService = false;        //是否已開啟定位服務
     private LocationManager mLocationManager;               //宣告定位管理控制
@@ -90,6 +90,7 @@ public class AllAppsActivity extends ListActivity {
     private String sLatitude = "";
     private double latitude = 0;
     private double longitude = 0;
+    private int LngLatCount = 0;
 
     private PackageManager packageManager = null;
     private List<ApplicationInfo> applist = null;
@@ -552,9 +553,9 @@ public class AllAppsActivity extends ListActivity {
         Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);    //使用GPS定位座標
 
         longitude = location.getLongitude();
-        sLongitude = "Initial" + String.valueOf(longitude);
+        sLongitude = "Initial-Lng-" + LngLatCount + ": " + String.valueOf(longitude);
         latitude = location.getLatitude();
-        sLatitude = "Initial" + String.valueOf(latitude);
+        sLatitude = "Initial-Lat-" + LngLatCount + ": " + String.valueOf(latitude);
 
         System.out.println("GreatLocation: " + sLongitude + ", " + sLatitude);
     }
@@ -562,10 +563,11 @@ public class AllAppsActivity extends ListActivity {
     private final LocationListener locationListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {
+            LngLatCount++;
             longitude = location.getLongitude();
-            sLongitude = "Listener" + String.valueOf(longitude);
+            sLongitude = "Listener-Lng" + String.valueOf(longitude);
             latitude = location.getLatitude();
-            sLatitude = "Listener" + String.valueOf(latitude);
+            sLatitude = "Listener-Lat" + String.valueOf(latitude);
         }
 
         @Override
