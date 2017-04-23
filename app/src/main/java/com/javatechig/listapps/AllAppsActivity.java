@@ -91,6 +91,7 @@ public class AllAppsActivity extends ListActivity {
     private double latitude = 0;
     private double longitude = 0;
     private int LngLatCount = 0;
+    private String locationSummary = "";
 
     private PackageManager packageManager = null;
     private List<ApplicationInfo> applist = null;
@@ -109,6 +110,9 @@ public class AllAppsActivity extends ListActivity {
     private JSONArray jsonArrApp = new JSONArray();
     private int jsonArrIdFeature = 0;
 
+    private JSONObject jsonObjRec = new JSONObject();
+    private JSONArray jsonArrRec = new JSONArray();
+
     private int useOrNot = 0; //default is 0, true is 1, false is 2.
 
     private Intent intent;
@@ -117,6 +121,7 @@ public class AllAppsActivity extends ListActivity {
     String trafficDataInfo = "";
     String infoSentToServer = "";
     String flowSentToServer = "";
+    String recSentToServer = "";
 
     private double dataUsageOfDay = 0;
     private double dataUsageOfMorning = 0;
@@ -428,8 +433,6 @@ public class AllAppsActivity extends ListActivity {
                     dataUsageOfMidnight += Double.parseDouble(datausageSumNow);
                 }
 
-//				dataUsageSummary += "List: id=" + id + " " + date + " " + clock + " hr=" + hr + " Rx=" + datausageRx + "KB Tx=" + datausageTx + "KB Sum=" + datausageSum + "KB RxNow=" + datausageRxNow + "KB TxNow=" + datausageTxNow + "KB SumNow=" + datausageSumNow + "\n";
-
             }
             dataUsageOfDay = dataUsageOfMorning + dataUsageOfAfternoon + dataUsageOfEvening + dataUsageOfMidnight;
 
@@ -469,7 +472,7 @@ public class AllAppsActivity extends ListActivity {
                 exceedOfMidnight = dataUsageOfMidnight - thresholdOfMidnight;
             }
 
-            dataUsageSummary += "Feature Summary: MACID=" + macid + "\nDate=" + getDate()
+            dataUsageSummary += "MACID=" + macid + "\nDate=" + getDate()
                     + "\nDataUsageOfDay=" + dataUsageOfDay + "KB" + "\nDataUsageOfMorning=" + dataUsageOfMorning + "KB" + "\nDataUsageOfAfternoon=" + dataUsageOfAfternoon + "KB"
                     + "\nDataUsageOfEvening=" + dataUsageOfEvening + "KB" + "\nDataUsageOfMidnight=" + dataUsageOfMidnight + "KB"
                     + "\n\nLimitOfDay=" + limitOfDay + "\nLimitOfMorning=" + limitOfMorning + "\nLimitOfAfternoon=" + limitOfAfternoon
@@ -479,7 +482,7 @@ public class AllAppsActivity extends ListActivity {
                     + "\n\n" + arrayApp[0] + "-" + arrayUid[0] + "=" + dataUsageOfApp[0] + "KB" + " " + arrayApp[1] + "-" + arrayUid[1] + "=" + dataUsageOfApp[1] + "KB"
                     + " " + arrayApp[2] + "-" + arrayUid[2] + "=" + dataUsageOfApp[2] + "KB" + " " + arrayApp[3] + "-" + arrayUid[3] + "=" + dataUsageOfApp[3] + "KB"
                     + " " + arrayApp[4] + "-" + arrayUid[4] + "=" + dataUsageOfApp[4] + "KB" + " " + arrayApp[5] + "-" + arrayUid[5] + "=" + dataUsageOfApp[5] + "KB\n";
-            System.out.print(dataUsageSummary);
+            System.out.println(dataUsageSummary);
 
             JSONObject featureObj = new JSONObject();
             featureObj.put("macid", deviceId);
@@ -506,13 +509,11 @@ public class AllAppsActivity extends ListActivity {
             jsonObjFeature.put("featuredatabases", jsonArrFeature);
 
             jsonArrIdFeature++;
-            System.out.print(jsonObjFeature.toString());
+//            System.out.println(jsonObjFeature.toString());
 
         } catch (JSONException ex) {
             ex.printStackTrace();
         }
-
-//		dataUsageSummary += "Json: " + jsonObjSummary.toString() + "\n";
 
         return jsonObjFeature.toString();
     }
@@ -522,19 +523,53 @@ public class AllAppsActivity extends ListActivity {
         String showMessage = calculateFeat();
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(getString(R.string.ask_appdata_title));
-        builder.setMessage(dataUsageSummary);
+        builder.setMessage("Feature Summary:\n" + dataUsageSummary + "\n\nJsonFormat:\n" + showMessage);
 
         builder.show();
     }
 
     private void displayMapDialog() {
-        locationServiceInitial();
 
+        String showMessage = calculateRec();
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(getString(R.string.ask_map_title));
-        builder.setMessage("Location: " + sLongitude + ", " + sLatitude);
+        builder.setMessage("Location Summary:\n" + locationSummary + "\n\nJsonFormat:\n" + showMessage);
 
         builder.show();
+    }
+
+    private String calculateRec() {
+        String macid = "";
+        String id = "";
+        String date = "";
+        String clock = "";
+        String longitude = "";
+        String latitude = "";
+        locationSummary = "";
+
+        try {
+            JSONArray recdatabases = jsonObjRec.getJSONArray("recdatabases");
+
+            for (int i = 0; i < recdatabases.length(); i++) {
+                JSONObject c = recdatabases.getJSONObject(i);
+
+                macid = c.getString("macid");
+                id = c.getString("id");
+                date = c.getString("date");
+                clock = c.getString("clock");
+                longitude = c.getString("longitude");
+                latitude = c.getString("latitude");
+
+                locationSummary += "MACID=" + macid + "\nId=" + id + "\nDate=" + date + "\nClock=" + clock + "\nLongitude=" + longitude + "\nLatitude=" + latitude + "\n";
+            }
+
+        } catch (JSONException ex) {
+            ex.printStackTrace();
+        }
+
+        System.out.println(locationSummary);
+
+        return jsonObjRec.toString();
     }
 
     private void locationServiceInitial() {
@@ -549,6 +584,7 @@ public class AllAppsActivity extends ListActivity {
             // for ActivityCompat#requestPermissions for more details.
             return;
         }
+        LngLatCount++;
 
         Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);    //使用GPS定位座標
 
@@ -784,6 +820,27 @@ public class AllAppsActivity extends ListActivity {
                 }
             }
 
+            if (Integer.parseInt(getSec()) % 10 == 0) { //getMin().toString().equals("00") && getSec().toString().equals("00") getMin().toString().equals("00") && getMin().toString().equals("00") && Integer.parseInt(getSec()) % 10 == 0   getSec().toString().equals("00")     getMin().toString().equals("00") && getSec().toString().equals("00")
+                try {
+                    // Here we convert Java Object to JSON
+                    JSONObject recObj = new JSONObject();
+                    recObj.put("macid", deviceId);
+                    recObj.put("id", LngLatCount);
+                    recObj.put("date", getDate()); // Set the first name/pair
+                    recObj.put("clock", getClock());
+                    recObj.put("longitude", sLongitude);
+                    recObj.put("latitude", sLatitude);
+
+                    jsonArrRec.put(recObj);
+                    jsonObjRec.put("recdatabases", jsonArrRec);
+
+                    locationServiceInitial();
+                } catch (JSONException ex) {
+                    ex.printStackTrace();
+                }
+            }
+
+
             if (Integer.parseInt(getSec()) % 10 == 0) {
                 try {
                     JSONArray databases = jsonObj.getJSONArray("databases");
@@ -820,11 +877,20 @@ public class AllAppsActivity extends ListActivity {
 //							if(getSec().toString().equals("00")) { //getHr().toString().equals("23") && getMin().toString().equals("59") && getSec().toString().equals("00")
                     RequestParams paramsFeat = new RequestParams();
                     infoSentToServer = calculateFeat();
+                    System.out.println(infoSentToServer);
 
                     // 送feature的通道,  要送的東西放在infoSentToServer , 格式幫忙弄成json , 第一格放MAC ID , 第二格開始放15個feature
                     paramsFeat.put("feature", infoSentToServer);
                     passToServer(paramsFeat, "CHT-feature");
 //							}
+
+                    RequestParams paramsRec = new RequestParams();
+                    recSentToServer = calculateRec();
+                    System.out.println(recSentToServer);
+
+                    // 送位置的通道,  要送的東西放在recSentToServer , 格式幫忙弄成json , 第一格放MAC ID ,  第二格當下時間 第三四格經緯度
+                    paramsRec.put("rec", recSentToServer);
+                    passToServer(paramsRec, "CHT-rec");
 
                 } catch (JSONException ex) {
                     ex.printStackTrace();
