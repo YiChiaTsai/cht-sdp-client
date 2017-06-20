@@ -1,5 +1,16 @@
 package com.javatechig.listapps;
 
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.design.widget.BottomNavigationView;
+import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.ListView;
+import android.widget.TextView;
+
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -81,8 +92,8 @@ import org.json.*;
 
 import static com.google.android.gms.internal.zzs.TAG;
 
+public class ActivityOne extends AppCompatActivity implements ListView.OnItemClickListener {
 
-public class AllAppsActivity extends AppCompatActivity implements ListView.OnItemClickListener {
     private String HOST = "192.168.43.176";
 
     private boolean getService = false;        //是否已開啟定位服務
@@ -158,16 +169,57 @@ public class AllAppsActivity extends AppCompatActivity implements ListView.OnIte
     private double[] mStartAppTX = new double[6];
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_one);
+
+        BottomNavigationView bottomNavigationView = (BottomNavigationView) findViewById(R.id.bottomNavView_Bar);
+        BottomNavigationViewHelper.disableShiftMode(bottomNavigationView);
+        Menu menu = bottomNavigationView.getMenu();
+        MenuItem menuItem = menu.getItem(1);
+        menuItem.setChecked(true);
+
+        bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                switch (item.getItemId()){
+                    case R.id.ic_arrow:
+                        Intent intent0 = new Intent(ActivityOne.this, MainActivity.class);
+                        intent0.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                        startActivity(intent0);
+                        break;
+
+                    case R.id.ic_android:
+
+                        break;
+
+                    case R.id.ic_books:
+                        Intent intent2 = new Intent(ActivityOne.this, ActivityTwo.class);
+                        startActivity(intent2);
+                        break;
+
+                    case R.id.ic_center_focus:
+                        Intent intent3 = new Intent(ActivityOne.this, ActivityThree.class);
+                        startActivity(intent3);
+                        break;
+
+                    case R.id.ic_backup:
+                        Intent intent4 = new Intent(ActivityOne.this, ActivityFour.class);
+                        startActivity(intent4);
+                        break;
+                }
+
+
+                return false;
+            }
+        });
 
         //取得系統定位服務
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         packageManager = getPackageManager();
         ((ListView)findViewById(R.id.list)).setOnItemClickListener(this);
-        new LoadApplications().execute();
+        new ActivityOne.LoadApplications().execute();
 
         try {
             deviceId = Secure.getString(this.getContentResolver(), Secure.ANDROID_ID);
@@ -200,7 +252,7 @@ public class AllAppsActivity extends AppCompatActivity implements ListView.OnIte
         // [END subscribe_topics]
         System.out.println("topic?");
 
-//        intent = new Intent(AllAppsActivity.this,DialogService.class);
+//        intent = new Intent(ActivityOne.this,DialogService.class);
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
@@ -217,6 +269,7 @@ public class AllAppsActivity extends AppCompatActivity implements ListView.OnIte
         } else {
             mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 10, locationListener);
         }
+
     }
 
     @Override
@@ -688,10 +741,10 @@ public class AllAppsActivity extends AppCompatActivity implements ListView.OnIte
 
             }
         } catch (ActivityNotFoundException e) {
-            Toast.makeText(AllAppsActivity.this, e.getMessage(),
+            Toast.makeText(ActivityOne.this, e.getMessage(),
                     Toast.LENGTH_LONG).show();
         } catch (Exception e) {
-            Toast.makeText(AllAppsActivity.this, e.getMessage(),
+            Toast.makeText(ActivityOne.this, e.getMessage(),
                     Toast.LENGTH_LONG).show();
         }
     }
@@ -702,7 +755,7 @@ public class AllAppsActivity extends AppCompatActivity implements ListView.OnIte
         @Override
         protected Void doInBackground(Void... params) {
             applist = checkForLaunchIntent(packageManager.getInstalledApplications(PackageManager.GET_META_DATA));
-            listadaptor = new ApplicationAdapter(AllAppsActivity.this,
+            listadaptor = new ApplicationAdapter(ActivityOne.this,
                     R.layout.snippet_list_row, applist);
 
             return null;
@@ -722,7 +775,7 @@ public class AllAppsActivity extends AppCompatActivity implements ListView.OnIte
 
         @Override
         protected void onPreExecute() {
-            progress = ProgressDialog.show(AllAppsActivity.this, null,
+            progress = ProgressDialog.show(ActivityOne.this, null,
                     "Loading application info...");
             super.onPreExecute();
         }
@@ -919,107 +972,108 @@ public class AllAppsActivity extends AppCompatActivity implements ListView.OnIte
         super.onPause();
     }
 
-	public void onDestroy(){
+    public void onDestroy(){
         super.onDestroy();
-		stopService(intent);
-	}
+        stopService(intent);
+    }
 
-	private void writeToFile(String data) {
+    private void writeToFile(String data) {
 
 
-		try {
-			OutputStreamWriter outputStreamWriter = new OutputStreamWriter(openFileOutput("trafficdata.txt", Context.MODE_PRIVATE));
-			outputStreamWriter.write(data);
-			outputStreamWriter.close();
-		}
-		catch (IOException e) {
-			Log.e("Exception", "File write failed: " + e.toString());
-		}
-	}
+        try {
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(openFileOutput("trafficdata.txt", Context.MODE_PRIVATE));
+            outputStreamWriter.write(data);
+            outputStreamWriter.close();
+        }
+        catch (IOException e) {
+            Log.e("Exception", "File write failed: " + e.toString());
+        }
+    }
 
-	private String readFromFile() {
+    private String readFromFile() {
 
-		String ret = "";
+        String ret = "";
 
-		try {
-			InputStream inputStream = openFileInput("trafficdata.txt");
+        try {
+            InputStream inputStream = openFileInput("trafficdata.txt");
 
-			if ( inputStream != null ) {
-				InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-				BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-				String receiveString = "";
-				StringBuilder stringBuilder = new StringBuilder();
+            if ( inputStream != null ) {
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+                String receiveString = "";
+                StringBuilder stringBuilder = new StringBuilder();
 
-				while ( (receiveString = bufferedReader.readLine()) != null ) {
-					stringBuilder.append(receiveString);
-				}
+                while ( (receiveString = bufferedReader.readLine()) != null ) {
+                    stringBuilder.append(receiveString);
+                }
 
-				inputStream.close();
-				ret = stringBuilder.toString();
+                inputStream.close();
+                ret = stringBuilder.toString();
 
 //				System.out.println("PPAP: " + ret);
-			}
-		}
-		catch (FileNotFoundException e) {
-			Log.e("login activity", "File not found: " + e.toString());
-		} catch (IOException e) {
-			Log.e("login activity", "Can not read file: " + e.toString());
-		}
+            }
+        }
+        catch (FileNotFoundException e) {
+            Log.e("login activity", "File not found: " + e.toString());
+        } catch (IOException e) {
+            Log.e("login activity", "Can not read file: " + e.toString());
+        }
 
-		return ret;
-	}
+        return ret;
+    }
 
-	//For dialog
-	private int showDialog(){
-		AlertDialog.Builder builder = new AlertDialog.Builder(AllAppsActivity.this);
-		builder.setTitle("There are more discount available in next certain period!");
-		builder.setMessage("Are you sure to use Skype APP right now or later?");
-		builder.setPositiveButton("Yes, I wanna use it now!",new DialogInterface.OnClickListener(){
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				RequestParams params = new RequestParams();
-				params.put("RULE", "Yes,"+getCurrentTime()); //"Yes,"+ getCurrentTime() ->
-				passToServer(params,"CHT-RULE");
-				useOrNot = 1;
-			}
-		});
-		builder.setNegativeButton("No, I can use it later!", new DialogInterface.OnClickListener(){
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				RequestParams params = new RequestParams();
-				params.put("RULE", "No,"+getCurrentTime());
-				passToServer(params,"CHT-RULE");
-				useOrNot = 2;
-			}
-		});
-		builder.show();
+    //For dialog
+    private int showDialog(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(ActivityOne.this);
+        builder.setTitle("There are more discount available in next certain period!");
+        builder.setMessage("Are you sure to use Skype APP right now or later?");
+        builder.setPositiveButton("Yes, I wanna use it now!",new DialogInterface.OnClickListener(){
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                RequestParams params = new RequestParams();
+                params.put("RULE", "Yes,"+getCurrentTime()); //"Yes,"+ getCurrentTime() ->
+                passToServer(params,"CHT-RULE");
+                useOrNot = 1;
+            }
+        });
+        builder.setNegativeButton("No, I can use it later!", new DialogInterface.OnClickListener(){
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                RequestParams params = new RequestParams();
+                params.put("RULE", "No,"+getCurrentTime());
+                passToServer(params,"CHT-RULE");
+                useOrNot = 2;
+            }
+        });
+        builder.show();
 
-		return useOrNot;
-	}
+        return useOrNot;
+    }
 
-	//傳至Server
-	public void passToServer(RequestParams params, String tube){ //tube: CHT-flow 送流量   tube:CHT-feature 送feature
-		AsyncHttpClient client = new AsyncHttpClient();
-		String url = "http://" + HOST + ":8080/CHTServer/hello/"+tube;
-		System.out.println(url);
-		client.get(url, params, new AsyncHttpResponseHandler() {
-			@Override
-			public void onSuccess(int i, Header[] headers, byte[] bytes) {
-				CharSequence cs = new String(bytes);
-				Toast toast = Toast.makeText(getApplicationContext(), cs, Toast.LENGTH_SHORT);    //toast 會閃現    用textView來接
-				toast.show();
-			}
+    //傳至Server
+    public void passToServer(RequestParams params, String tube){ //tube: CHT-flow 送流量   tube:CHT-feature 送feature
+        AsyncHttpClient client = new AsyncHttpClient();
+        String url = "http://" + HOST + ":8080/CHTServer/hello/"+tube;
+        System.out.println(url);
+        client.get(url, params, new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int i, Header[] headers, byte[] bytes) {
+                CharSequence cs = new String(bytes);
+                Toast toast = Toast.makeText(getApplicationContext(), cs, Toast.LENGTH_SHORT);    //toast 會閃現    用textView來接
+                toast.show();
+            }
 
-			@Override
-			public void onFailure(int i, Header[] headers, byte[] bytes, Throwable throwable) {
-				Log.e("InvokeWS", Integer.toString(i));
-				if (bytes != null) {
-					CharSequence cs = new String(bytes);
-					Toast toast = Toast.makeText(getApplicationContext(), cs, Toast.LENGTH_SHORT);
-					toast.show();
-				}
-			}
-		});
-	}
+            @Override
+            public void onFailure(int i, Header[] headers, byte[] bytes, Throwable throwable) {
+                Log.e("InvokeWS", Integer.toString(i));
+                if (bytes != null) {
+                    CharSequence cs = new String(bytes);
+                    Toast toast = Toast.makeText(getApplicationContext(), cs, Toast.LENGTH_SHORT);
+                    toast.show();
+                }
+            }
+        });
+    }
+
 
 }

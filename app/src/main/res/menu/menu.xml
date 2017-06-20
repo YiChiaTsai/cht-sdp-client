@@ -26,5 +26,6 @@
         android:showAsAction="always|withText"
         android:title="@string/action_settings_ask_map"/>
 
+
 </menu>
     <!--android:icon="@android:drawable/ic_menu_info_details"-->

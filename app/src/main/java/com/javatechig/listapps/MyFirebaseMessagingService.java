@@ -55,7 +55,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
 
-        String deviceId = AllAppsActivity.getdeviceId();
+        String deviceId = ActivityOne.getdeviceId();
         Log.d(TAG, "DeviceID: "+deviceId);
         // 種類Key 含有 UID value, 則註冊
         if (valueList.contains(deviceId)){
@@ -76,7 +76,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     //This method is only generating push notification
     //It is same as we did in earlier posts
     private void sendNotification(String messageBody, String messageTitle) {
-        Intent intent = new Intent(this, AllAppsActivity.class);
+        Intent intent = new Intent(this, ActivityOne.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent,
                 PendingIntent.FLAG_ONE_SHOT);
