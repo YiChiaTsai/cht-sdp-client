@@ -39,6 +39,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -81,7 +82,7 @@ import org.json.*;
 import static com.google.android.gms.internal.zzs.TAG;
 
 
-public class AllAppsActivity extends ListActivity {
+public class AllAppsActivity extends AppCompatActivity implements ListView.OnItemClickListener {
     private String HOST = "192.168.43.176";
 
     private boolean getService = false;        //是否已開啟定位服務
@@ -165,7 +166,7 @@ public class AllAppsActivity extends ListActivity {
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         packageManager = getPackageManager();
-
+        ((ListView)findViewById(R.id.list)).setOnItemClickListener(this);
         new LoadApplications().execute();
 
         try {
@@ -658,10 +659,23 @@ public class AllAppsActivity extends ListActivity {
 
     }
 
-    @Override
-    protected void onListItemClick(ListView l, View v, int position, long id) {
-        super.onListItemClick(l, v, position, id);
+    private List<ApplicationInfo> checkForLaunchIntent(List<ApplicationInfo> list) {
+        ArrayList<ApplicationInfo> applist = new ArrayList<ApplicationInfo>();
+        for (ApplicationInfo info : list) {
+            try {
+                if (null != packageManager.getLaunchIntentForPackage(info.packageName)) {
+                    applist.add(info);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
+        return applist;
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         ApplicationInfo app = applist.get(position);
         try {
             Intent intent = packageManager
@@ -680,21 +694,6 @@ public class AllAppsActivity extends ListActivity {
             Toast.makeText(AllAppsActivity.this, e.getMessage(),
                     Toast.LENGTH_LONG).show();
         }
-    }
-
-    private List<ApplicationInfo> checkForLaunchIntent(List<ApplicationInfo> list) {
-        ArrayList<ApplicationInfo> applist = new ArrayList<ApplicationInfo>();
-        for (ApplicationInfo info : list) {
-            try {
-                if (null != packageManager.getLaunchIntentForPackage(info.packageName)) {
-                    applist.add(info);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        return applist;
     }
 
     private class LoadApplications extends AsyncTask<Void, Void, Void> {
@@ -716,7 +715,7 @@ public class AllAppsActivity extends ListActivity {
 
         @Override
         protected void onPostExecute(Void result) {
-            setListAdapter(listadaptor);
+            ((ListView)findViewById(R.id.list)).setAdapter(listadaptor);
             progress.dismiss();
             super.onPostExecute(result);
         }
@@ -879,7 +878,7 @@ public class AllAppsActivity extends ListActivity {
                     infoSentToServer = calculateFeat();
                     System.out.println(infoSentToServer);
 
-                    // 送feature的通道,  要送的東西放在infoSentToServer , 格式幫忙弄成json , 第一格放MAC ID , 第二格開始放15個feature
+                    // 送feature的通道,  要送的東西放在infoSentToServer , 格式幫忙弄成json , 第一格放MAC ID , 第二格開始放18個feature
                     paramsFeat.put("feature", infoSentToServer);
                     passToServer(paramsFeat, "CHT-feature");
 //							}
@@ -888,7 +887,7 @@ public class AllAppsActivity extends ListActivity {
                     recSentToServer = calculateRec();
                     System.out.println(recSentToServer);
 
-                    // 送位置的通道,  要送的東西放在recSentToServer , 格式幫忙弄成json , 第一格放MAC ID ,  第二格當下時間 第三四格經緯度
+                    // 送Location的通道,  要送的東西放在recSentToServer , 格式幫忙弄成json , 第一格放MAC ID ,  第二格當下時間 第三四格經緯度
                     paramsRec.put("rec", recSentToServer);
                     passToServer(paramsRec, "CHT-rec");
 
