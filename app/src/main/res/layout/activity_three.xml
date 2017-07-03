@@ -13,14 +13,16 @@
         android:layout_height="match_parent">
 
         <RelativeLayout
+            android:id="@+id/topBar"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:id="@+id/topBar">
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true">
 
             <android.support.design.widget.AppBarLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
-
 
 
             </android.support.design.widget.AppBarLayout>
@@ -28,39 +30,73 @@
         </RelativeLayout>
 
 
-
-
         <RelativeLayout
-            android:layout_below="@+id/topBar"
-            android:layout_above="@+id/bottomBar"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            >
+            android:layout_alignParentTop="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true">
 
             <TextView
+                android:id="@+id/activityTitle3"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="80dp"
-                android:textSize="30sp"
-                android:id="@+id/activityTitle3"
-                android:textAlignment="center"/>
+                android:textAlignment="center"
+                android:textSize="30sp" />
+
+            <ProgressBar
+                android:id="@+id/progressBarRssi"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentRight="true"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true" />
+
+            <Button
+                android:id="@+id/buttonRssi"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_centerHorizontal="true"
+                android:layout_marginBottom="87dp"
+                android:text="Start" />
+
+            <TextView
+                android:id="@+id/rssiShow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/progressBarRssi"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="22dp"
+                android:text="0" />
+
+            <TextView
+                android:id="@+id/textView3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBaseline="@+id/rssiShow"
+                android:layout_alignBottom="@+id/rssiShow"
+                android:layout_toLeftOf="@+id/rssiShow"
+                android:layout_toStartOf="@+id/rssiShow"
+                android:text="RSSI:  " />
 
         </RelativeLayout>
 
 
-
-
-
         <RelativeLayout
+            android:id="@+id/bottomBar"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:id="@+id/bottomBar"
             android:layout_alignParentBottom="true">
 
             <android.support.design.widget.BottomNavigationView
+                android:id="@+id/bottomNavView_Bar"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:id="@+id/bottomNavView_Bar"
                 android:background="@drawable/white_grey_border_top"
                 app:menu="@menu/bottom_navigation_menu">
 
@@ -69,20 +105,7 @@
         </RelativeLayout>
 
 
-
     </RelativeLayout>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 </android.support.design.widget.CoordinatorLayout>
