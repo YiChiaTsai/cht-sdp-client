@@ -18,8 +18,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.List;
 
@@ -30,7 +33,14 @@ import java.util.List;
 public class ActivityThree extends AppCompatActivity {
 
     private TextView rssiTextView;
+    private TextView transfer_rate_View;
+    private TextView server_View;
+
+    private Button sim_Button;
     private Button startRssi;
+
+    private EditText sim_in;
+
     private ProgressBar pb;
 
     private Handler mThreadHandler;
@@ -42,6 +52,8 @@ public class ActivityThree extends AppCompatActivity {
     private List<WifiConfiguration> wifiConfigurations;
     private List<WifiConfiguration> configs;
     private WifiInfo info;
+
+    static String busyornot = "";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -91,15 +103,31 @@ public class ActivityThree extends AppCompatActivity {
             }
         });
 
+        // [START subscribe_topics]
+        FirebaseMessaging.getInstance().subscribeToTopic("news");
+        // [END subscribe_topics]
+        System.out.println("topic?");
+
 
         rssiTextView = (TextView)findViewById(R.id.rssiShow);
+        transfer_rate_View = (TextView)findViewById(R.id.rateShow);
+        server_View = (TextView)findViewById(R.id.serverbusy);
+
+
+
+        transfer_rate_View.setText("上下載速度: "+Math.round(MyFirebaseMessagingService.transfer_rate_bit)+"Mb/s");
+
         startRssi = (Button)findViewById(R.id.buttonRssi);
+        sim_Button = (Button)findViewById(R.id.simulatebutton);
+        sim_in = (EditText) findViewById(R.id.sim_in);
+
         pb = (ProgressBar)findViewById(R.id.progressBarRssi);
         pb.setProgress(0);
 
         mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         mWifiManager.setWifiEnabled(true);
         mWifiManager.startScan();
+
 
         mThread = new HandlerThread("getRssi");
         mThread.start();
@@ -112,6 +140,19 @@ public class ActivityThree extends AppCompatActivity {
                     case 1:
                         rssiTextView.setText(Integer.toString(mWifiManager.getConnectionInfo().getRssi()));
                         pb.setProgress(mWifiManager.getConnectionInfo().getRssi()+100);
+
+                        if (MyFirebaseMessagingService.transfer_rate_bit>MyFirebaseMessagingService.transfer_rate_threshold){
+                            busyornot = "Good";
+                        }
+                        else if (mWifiManager.getConnectionInfo().getRssi()>MyFirebaseMessagingService.signal_rate_threshold){
+                            busyornot = "Busy";
+                        }
+                        else{
+                            busyornot = "Question";
+                        }
+
+                        server_View.setText("伺服器狀況: "+busyornot);
+
                         break;
                 }
                 super.handleMessage(msg);
@@ -137,6 +178,14 @@ public class ActivityThree extends AppCompatActivity {
                         }
                     }
                 }).start();
+            }
+        });
+
+        sim_Button.setOnClickListener(new Button.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                transfer_rate_View.setText("上下載速度: "+sim_in.getText().toString()+"Mb/s");
+                MyFirebaseMessagingService.transfer_rate_bit = Double.parseDouble(sim_in.getText().toString());
             }
         });
     }

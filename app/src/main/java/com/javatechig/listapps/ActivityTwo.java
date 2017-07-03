@@ -95,6 +95,7 @@ public class ActivityTwo extends AppCompatActivity {
                 System.out.println("[PROGRESS] progress : " + percent + "%");
                 System.out.println("[PROGRESS] rate in octet/s : " + report.getTransferRateOctet());
                 System.out.println("[PROGRESS] rate in bit/s   : " + report.getTransferRateBit());
+                MyFirebaseMessagingService.transfer_rate_bit = report.getTransferRateBit().doubleValue()/(1024*1024); // bit to Mb
             }
 
             @Override

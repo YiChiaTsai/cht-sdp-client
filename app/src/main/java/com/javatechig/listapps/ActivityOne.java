@@ -223,6 +223,7 @@ public class ActivityOne extends AppCompatActivity implements ListView.OnItemCli
 
         try {
             deviceId = Secure.getString(this.getContentResolver(), Secure.ANDROID_ID);
+            System.out.println("deviceID:"+deviceId);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -246,11 +247,6 @@ public class ActivityOne extends AppCompatActivity implements ListView.OnItemCli
 
         testButton = (Button) findViewById(R.id.testme);
         testButton.setOnClickListener(startClickListener);
-
-        // [START subscribe_topics]
-        FirebaseMessaging.getInstance().subscribeToTopic("news");
-        // [END subscribe_topics]
-        System.out.println("topic?");
 
 //        intent = new Intent(ActivityOne.this,DialogService.class);
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&

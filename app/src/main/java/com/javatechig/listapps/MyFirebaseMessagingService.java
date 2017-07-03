@@ -28,9 +28,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "MyFirebaseMsgService";
 
+    static double transfer_rate_bit = 0;  // For server busy detection, factor 1, mb
+
+    static double transfer_rate_threshold = 25;
+    static int signal_rate_threshold = -40;
+
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
-
 
 
         //Displaying data in log
@@ -63,9 +67,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             Log.d(TAG, "category: " + category);
             FirebaseMessaging.getInstance().subscribeToTopic(category);
         }
-        else{
+        else {
             //Calling method to generate notification
-            sendNotification(remoteMessage.getNotification().getBody(), remoteMessage.getNotification().getTitle());
+            if (ActivityThree.busyornot.equals("Good")){  //不壅塞
+                sendNotification(remoteMessage.getNotification().getBody(), remoteMessage.getNotification().getTitle());
+            }
         }
 
 

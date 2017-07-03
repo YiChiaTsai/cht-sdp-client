@@ -80,9 +80,53 @@
                 android:layout_height="wrap_content"
                 android:layout_alignBaseline="@+id/rssiShow"
                 android:layout_alignBottom="@+id/rssiShow"
+                android:layout_alignLeft="@+id/buttonRssi"
+                android:layout_alignStart="@+id/buttonRssi"
                 android:layout_toLeftOf="@+id/rssiShow"
-                android:layout_toStartOf="@+id/rssiShow"
                 android:text="RSSI:  " />
+
+            <TextView
+                android:id="@+id/rateShow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="上下載速度: 0"
+                android:layout_marginBottom="49dp"
+                android:layout_above="@+id/progressBarRssi"
+                android:layout_alignLeft="@+id/textView3"
+                android:layout_alignStart="@+id/textView3" />
+
+            <Button
+                android:id="@+id/simulatebutton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="simulate"
+                android:layout_alignBaseline="@+id/buttonRssi"
+                android:layout_alignBottom="@+id/buttonRssi"
+                android:layout_toEndOf="@+id/serverbusy"
+                android:layout_toRightOf="@+id/serverbusy" />
+
+            <EditText
+                android:id="@+id/sim_in"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/simulatebutton"
+                android:layout_alignEnd="@+id/simulatebutton"
+                android:layout_alignLeft="@+id/simulatebutton"
+                android:layout_alignRight="@+id/simulatebutton"
+                android:layout_alignStart="@+id/simulatebutton"
+                android:layout_marginBottom="10dp"
+                android:ems="10"
+                android:inputType="number" />
+
+            <TextView
+                android:id="@+id/serverbusy"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="伺服器狀況: 未知"
+                android:layout_marginBottom="37dp"
+                android:layout_alignBottom="@+id/activityTitle3"
+                android:layout_alignLeft="@+id/rateShow"
+                android:layout_alignStart="@+id/rateShow" />
 
         </RelativeLayout>
 
