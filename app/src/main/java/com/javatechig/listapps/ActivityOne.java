@@ -94,7 +94,7 @@ import static com.google.android.gms.internal.zzs.TAG;
 
 public class ActivityOne extends AppCompatActivity implements ListView.OnItemClickListener {
 
-    private String HOST = "192.168.43.176";
+    private String HOST = "192.168.43.176"; //Hsin-Wei phone : "192.168.43.176"
 
     private boolean getService = false;        //是否已開啟定位服務
     private LocationManager mLocationManager;               //宣告定位管理控制
@@ -1041,7 +1041,12 @@ public class ActivityOne extends AppCompatActivity implements ListView.OnItemCli
                 useOrNot = 2;
             }
         });
-        builder.show();
+//        System.out.println("asdfasdf:"+ActivityThree.busyornot.equals("Busy"));
+        if(ActivityThree.busyornot.equals("Busy")){
+            builder.show();
+        } else {
+            useOrNot = 1;
+        }
 
         return useOrNot;
     }

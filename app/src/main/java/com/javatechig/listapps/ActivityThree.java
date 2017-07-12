@@ -55,7 +55,7 @@ import android.telephony.gsm.GsmCellLocation;
 
 public class ActivityThree extends AppCompatActivity {
 
-    private String HOST = "192.168.43.176";
+    private String HOST = "192.168.43.176"; //Hsin-Wei phone : "192.168.43.176"
     private Handler mHandler = new Handler();
     String congestionSentToServer = "";
     private int CongestionCount = 0;
@@ -256,8 +256,8 @@ public class ActivityThree extends AppCompatActivity {
                     congestionObj.put("date", getDate());
                     congestionObj.put("clock", getClock());
                     congestionObj.put("congestion", busyornot);
-                    congestionObj.put("cell_id", cellLocation.getCid());
-                    congestionObj.put("lac", cellLocation.getLac());
+                    congestionObj.put("cell_id", mWifiManager.getConnectionInfo().getSSID()); //congestionObj.put("cell_id", cellLocation.getCid());
+//                    congestionObj.put("lac", cellLocation.getLac());
 
                     jsonArrCongestion.put(congestionObj);
                     jsonObjCongestion.put("congestiondatabases", jsonArrCongestion);

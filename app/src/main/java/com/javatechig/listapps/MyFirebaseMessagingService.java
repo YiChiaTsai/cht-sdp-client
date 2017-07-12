@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
@@ -58,8 +59,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             FirebaseMessaging.getInstance().unsubscribeFromTopic(key);
         }
 
+        String deviceId="";
+        try {
+            deviceId = Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ANDROID_ID);
+            System.out.println("deviceID:"+deviceId);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
 
-        String deviceId = ActivityOne.getdeviceId();
         Log.d(TAG, "DeviceID: "+deviceId);
         // 種類Key 含有 UID value, 則註冊
         if (valueList.contains(deviceId)){
